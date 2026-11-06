@@ -21,9 +21,6 @@
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
-    canvas {
-      touch-action: none;
-    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between p-3 sm:p-6">
@@ -45,7 +42,7 @@
     <div class="glass-card rounded-2xl p-6 shadow-2xl space-y-5">
       <div class="text-center space-y-1">
         <h2 class="text-xl font-bold text-slate-100">Welcome Back</h2>
-        <p class="text-xs text-slate-400">Sign in to access the receiving portal</p>
+        <p class="text-xs text-slate-400">Sign in with your Supabase Auth account</p>
       </div>
 
       <form onsubmit="handleLogin(event)" class="space-y-4">
@@ -56,8 +53,8 @@
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">User ID (UID)</label>
-          <input type="password" id="loginUid" required placeholder="Enter your UID" 
+          <label class="block text-xs font-medium text-slate-300 mb-1">Password</label>
+          <input type="password" id="loginPassword" required placeholder="••••••••" 
             class="w-full px-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors">
         </div>
 
@@ -77,7 +74,7 @@
       <div class="space-y-1">
         <span class="text-xs font-semibold tracking-wider text-emerald-400 uppercase">Gateway Access</span>
         <h2 class="text-xl font-bold text-slate-100">Select Platform</h2>
-        <p class="text-xs text-slate-400">Logged in as <span id="landingUserName" class="text-slate-200 font-semibold">User</span></p>
+        <p class="text-xs text-slate-400">Logged in as <span id="landingUserEmail" class="text-slate-200 font-semibold">User</span></p>
       </div>
 
       <div class="space-y-3 pt-2">
@@ -110,7 +107,7 @@
 
   <!-- Footer -->
   <footer class="w-full max-w-md mx-auto text-center text-[10px] text-slate-600">
-    Secure Document Receiving Gateway &bull; Powered by Supabase
+    Secure Document Receiving Gateway &bull; Powered by Supabase Auth
   </footer>
 
   <script>
@@ -118,8 +115,6 @@
     const SUPABASE_URL = "https://dideaglufjrautyomrzm.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_-b5NQcuBhQk57Y-tXzDe_A_HR3Im8CH";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    let activeUser = null;
 
     function navigateTo(viewName) {
       document.getElementById('loginView').classList.add('hidden');
@@ -136,41 +131,35 @@
       }
     }
 
-    // Login Authentication Logic against `users` table
+    // Supabase Auth Login
     async function handleLogin(e) {
       e.preventDefault();
       const email = document.getElementById('loginEmail').value.trim();
-      const uid = document.getElementById('loginUid').value.trim();
+      const password = document.getElementById('loginPassword').value;
       const errorDiv = document.getElementById('loginError');
       const loginBtn = document.getElementById('loginBtn');
 
       errorDiv.classList.add('hidden');
       loginBtn.disabled = true;
-      loginBtn.innerText = 'Verifying...';
+      loginBtn.innerText = 'Authenticating...';
 
       try {
-        const { data, error } = await supabaseClient
-          .from('users')
-          .select('name, emailadd, uid')
-          .eq('emailadd', email)
-          .eq('uid', uid)
-          .single();
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+          email: email,
+          password: password,
+        });
 
-        if (error || !data) {
-          throw new Error('Invalid email or User ID.');
-        }
+        if (error) throw error;
 
-        activeUser = data;
-        localStorage.setItem('doc_gateway_user', JSON.stringify(data));
-
-        document.getElementById('landingUserName').innerText = data.name;
-        document.getElementById('userBadge').innerText = data.name;
+        const userEmail = data.user.email;
+        document.getElementById('landingUserEmail').innerText = userEmail;
+        document.getElementById('userBadge').innerText = userEmail;
         document.getElementById('userBadge').classList.remove('hidden');
         document.getElementById('logoutBtn').classList.remove('hidden');
 
         navigateTo('landing');
       } catch (err) {
-        errorDiv.innerText = err.message || 'Authentication failed.';
+        errorDiv.innerText = err.message || 'Invalid login credentials.';
         errorDiv.classList.remove('hidden');
       } finally {
         loginBtn.disabled = false;
@@ -178,19 +167,18 @@
       }
     }
 
-    function handleLogout() {
-      activeUser = null;
-      localStorage.removeItem('doc_gateway_user');
+    async function handleLogout() {
+      await supabaseClient.auth.signOut();
       navigateTo('login');
     }
 
-    // Auto Session Restore
-    window.addEventListener('DOMContentLoaded', () => {
-      const savedUser = localStorage.getItem('doc_gateway_user');
-      if (savedUser) {
-        activeUser = JSON.parse(savedUser);
-        document.getElementById('landingUserName').innerText = activeUser.name;
-        document.getElementById('userBadge').innerText = activeUser.name;
+    // Check active session on load
+    window.addEventListener('DOMContentLoaded', async () => {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session && session.user) {
+        const userEmail = session.user.email;
+        document.getElementById('landingUserEmail').innerText = userEmail;
+        document.getElementById('userBadge').innerText = userEmail;
         document.getElementById('userBadge').classList.remove('hidden');
         document.getElementById('logoutBtn').classList.remove('hidden');
         navigateTo('landing');
@@ -200,9 +188,9 @@
     });
   </script>
 
-  <ElicitationsGroup message="To expand this gateway system further:">
-    <Elicitation label="Create the separate signpad.html file code linked to this landing page" query="Provide the complete code for signpad.html that pre-fills the logged-in user's name into the received by field and links back to the landing portal." />
-    <Elicitation label="Add role-based access control checking in Supabase" query="Add a role column in the users table to restrict access to certain departments or administrative views." />
+  <ElicitationsGroup message="Next steps for your authenticated system:">
+    <Elicitation label="Pass the logged-in user's email into signpad.html automatically" query="How can I pass the authenticated user email from this landing page to signpad.html using URL parameters or localStorage so it pre-fills the received by field?" />
+    <Elicitation label="Add RLS policy check on document_proofs using auth.uid()" query="Provide the SQL snippet to tie document_proofs entries to the authenticated Supabase Auth user ID." />
   </ElicitationsGroup>
 
 </body>
