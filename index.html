@@ -80,6 +80,18 @@
                     </div>
                 </div>
 
+                <!-- Received By (Name) -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                        Received By <span class="text-red-400">*</span>
+                    </label>
+                    <div class="relative">
+                        <i data-lucide="user-check" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                        <input type="text" id="receivedBy" placeholder="Recipient's full name" required
+                            class="w-full pl-9 pr-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                    </div>
+                </div>
+
                 <!-- Receiving Department Smart Dropdown -->
                 <div>
                     <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
@@ -214,6 +226,10 @@
                     <div class="flex justify-between">
                         <span class="text-slate-400">Document Title:</span>
                         <span class="font-semibold text-slate-100 truncate max-w-[180px]" id="cardDocTitle">---</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Received By:</span>
+                        <span class="font-semibold text-indigo-300 truncate max-w-[180px]" id="cardReceivedBy">---</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-slate-400">Department:</span>
@@ -509,12 +525,18 @@
 
         async function generateAndSaveProof() {
             const title = document.getElementById('docTitle').value.trim();
+            const receivedBy = document.getElementById('receivedBy').value.trim();
             const dept = document.getElementById('receivingDept').value.trim();
             const email = document.getElementById('recipientEmail').value.trim();
 
             if (!title) {
                 document.getElementById('docTitle').focus();
                 showToast('Please enter Document Title', 'alert');
+                return;
+            }
+            if (!receivedBy) {
+                document.getElementById('receivedBy').focus();
+                showToast('Please enter Recipient Name in Received By', 'alert');
                 return;
             }
             if (!dept) {
@@ -544,6 +566,7 @@
             currentConfirmedRecord = {
                 id: receiptId,
                 title,
+                receivedBy,
                 dept,
                 email,
                 timestamp: timeFormatted,
@@ -554,6 +577,7 @@
             const supabaseSuccess = await saveToSupabase({
                 receipt_id: receiptId,
                 document_title: title,
+                received_by: receivedBy,
                 receiving_department: dept,
                 recipient_email: email,
                 timestamp: timeFormatted,
@@ -569,6 +593,7 @@
             // Update UI elements in Modal
             document.getElementById('cardReceiptId').textContent = '#' + receiptId;
             document.getElementById('cardDocTitle').textContent = title;
+            document.getElementById('cardReceivedBy').textContent = receivedBy;
             document.getElementById('cardDept').textContent = dept;
             document.getElementById('cardEmail').textContent = email;
             document.getElementById('cardTimestamp').textContent = timeFormatted;
@@ -598,7 +623,7 @@
 
             const rec = currentConfirmedRecord;
             const subject = encodeURIComponent(`Document Receipt Confirmation: ${rec.title}`);
-            const bodyText = `Dear Recipient,\n\nThank you for confirming receipt of the document.\n\nDocument Details:\n- Document Title: ${rec.title}\n- Receiving Department: ${rec.dept}\n- Date & Time: ${rec.timestamp}\n- Reference ID: #${rec.id}\n\nKindly contact us at local 664 for further updates or queries.\n\nBest regards,\nDocument Tracking Hub`;
+            const bodyText = `Dear ${rec.receivedBy},\n\nThank you for confirming receipt of the document.\n\nDocument Details:\n- Document Title: ${rec.title}\n- Received By: ${rec.receivedBy}\n- Receiving Department: ${rec.dept}\n- Date & Time: ${rec.timestamp}\n- Reference ID: #${rec.id}\n\nKindly contact us at local 664 for further updates or queries.\n\nBest regards,\nDocument Tracking Hub`;
 
             const mailtoUrl = `mailto:${rec.email}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
             
@@ -649,7 +674,7 @@
                             <span>•</span>
                             <span class="truncate max-w-[140px]">${r.title}</span>
                         </div>
-                        <div class="text-[10px] text-slate-400">${r.dept} (${r.timestamp})</div>
+                        <div class="text-[10px] text-slate-400">By: ${r.receivedBy} | ${r.dept} (${r.timestamp})</div>
                     </div>
                     <button onclick="downloadHistoryRecord('${r.id}')" class="p-2 bg-indigo-600/20 text-indigo-300 rounded-lg text-xs font-medium border border-indigo-500/30">
                         <i data-lucide="download" class="w-3.5 h-3.5"></i>
