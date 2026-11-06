@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Proof of Delivery & Signature Pad</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- html2canvas for receipt export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+        }
+        canvas {
+            touch-action: none;
+        }
+        .signature-grid {
+            background-image: linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 16px);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between antialiased selection:bg-indigo-500 selection:text-white pb-safe">
+
+    <!-- Mobile Top Navigation Header -->
+    <header class="bg-slate-800/90 backdrop-blur-md border-b border-slate-700/60 sticky top-0 z-30 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+            <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md shadow-indigo-900/40">
+                <i data-lucide="package-check" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="text-base font-bold text-white leading-tight">POD Mobile</h1>
+                <p class="text-[11px] text-slate-400 font-medium">Recipient Proof Capture</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button type="button" onclick="openHistoryDrawer()" class="relative p-2 text-slate-300 hover:text-white bg-slate-700/60 rounded-xl active:scale-95 transition-all">
+                <i data-lucide="history" class="w-5 h-5"></i>
+                <span id="historyBadge" class="absolute -top-1 -right-1 bg-indigo-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Mobile Content Body -->
+    <main class="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-4">
+
+        <!-- Card 1: Quick Delivery Details Form -->
+        <div class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-4 shadow-lg space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-2.5">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="file-text" class="w-4 h-4 text-indigo-400"></i>
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">1. Delivery Info</h2>
+                </div>
+                <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">Active Session</span>
+            </div>
+
+            <form id="mobileForm" onsubmit="event.preventDefault();" class="space-y-3">
+                <!-- Order/Tracking No -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                        Tracking / Order # <span class="text-red-400">*</span>
+                    </label>
+                    <div class="relative">
+                        <i data-lucide="hash" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                        <input type="text" id="trackingNo" placeholder="e.g. TRK-98421" required
+                            class="w-full pl-9 pr-3 py-3 bg-slate-900/80 border border-slate-700 rounded-xl text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Recipient Name -->
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                            Recipient Name <span class="text-red-400">*</span>
+                        </label>
+                        <div class="relative">
+                            <i data-lucide="user" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                            <input type="text" id="recipientName" placeholder="Full Name" required
+                                class="w-full pl-9 pr-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                        </div>
+                    </div>
+
+                    <!-- Received By Relationship -->
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                            Received By
+                        </label>
+                        <div class="relative">
+                            <i data-lucide="users" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                            <select id="receivedBy" class="w-full pl-9 pr-2 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none">
+                                <option value="Self">Self (Customer)</option>
+                                <option value="Authorized Rep">Authorized Rep</option>
+                                <option value="Building Guard / Reception">Guard / Reception</option>
+                                <option value="Family Member">Family Member</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Date & Time Timestamp -->
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                            Timestamp
+                        </label>
+                        <input type="datetime-local" id="deliveryTimestamp"
+                            class="w-full px-2.5 py-2 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <!-- Delivery Status -->
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                            Condition
+                        </label>
+                        <select id="deliveryCondition" class="w-full px-2.5 py-2 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="Delivered - Intact">Intact & Good</option>
+                            <option value="Box Damaged - Goods OK">Box Damaged</option>
+                            <option value="Partial Delivery">Partial Delivery</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Card 2: Mobile Signature Capture Pad -->
+        <div class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-4 shadow-lg space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-2.5">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="pen-tool" class="w-4 h-4 text-indigo-400"></i>
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">2. Touch Signature</h2>
+                </div>
+                <span id="strokeCounter" class="text-[11px] text-slate-400 font-mono">0 Strokes</span>
+            </div>
+
+            <!-- Mobile Signature Toolbar -->
+            <div class="flex items-center justify-between bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-700/60">
+                <!-- Ink Color Buttons -->
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="setPenColor('#000000')" id="btnColorBlack"
+                        class="w-7 h-7 rounded-full bg-slate-950 border-2 border-indigo-500 ring-2 ring-indigo-500/30 transition-transform active:scale-90"></button>
+                    <button type="button" onclick="setPenColor('#1d4ed8')" id="btnColorBlue"
+                        class="w-7 h-7 rounded-full bg-blue-600 border-2 border-transparent transition-transform active:scale-90"></button>
+                    <button type="button" onclick="setPenColor('#dc2626')" id="btnColorRed"
+                        class="w-7 h-7 rounded-full bg-red-600 border-2 border-transparent transition-transform active:scale-90"></button>
+                </div>
+
+                <!-- Stroke Slider -->
+                <div class="flex items-center space-x-1.5 px-2">
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold">Size</span>
+                    <input type="range" id="strokeWidth" min="1.5" max="7" value="3" step="0.5"
+                        class="w-16 accent-indigo-500 cursor-pointer" oninput="updateStrokeWidth(this.value)">
+                </div>
+
+                <!-- Action Undo & Clear -->
+                <div class="flex items-center space-x-1">
+                    <button type="button" onclick="undoLastStroke()" title="Undo" class="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-lg active:scale-95 transition-all">
+                        <i data-lucide="undo-2" class="w-4 h-4"></i>
+                    </button>
+                    <button type="button" onclick="clearCanvas()" title="Clear" class="p-2 text-red-400 hover:text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg active:scale-95 transition-all">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Responsive Signature Canvas Container -->
+            <div class="relative w-full h-56 bg-slate-100 rounded-xl overflow-hidden signature-grid border-2 border-slate-600 flex flex-col justify-end">
+                <div class="absolute bottom-8 left-4 right-4 border-b-2 border-dashed border-slate-400 pointer-events-none flex justify-between items-center pb-1">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                        <i data-lucide="x" class="w-3 h-3"></i> Sign inside box
+                    </span>
+                    <span class="text-[9px] font-mono text-slate-400">Digital Touch Verified</span>
+                </div>
+                <canvas id="sigCanvas" class="w-full h-full cursor-crosshair z-10"></canvas>
+            </div>
+        </div>
+    </main>
+
+    <!-- Mobile Bottom Fixed Quick Actions Bar -->
+    <div class="sticky bottom-0 z-20 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 px-4 py-3 max-w-md w-full mx-auto flex items-center gap-2">
+        <button type="button" onclick="exportPNGSignatureOnly()" class="flex-1 py-3 px-3 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center justify-center space-x-1.5 transition-all shadow-md">
+            <i data-lucide="download" class="w-4 h-4 text-slate-400"></i>
+            <span>PNG Signature</span>
+        </button>
+        <button type="button" onclick="generateAndSaveProof()" class="flex-[1.4] py-3 px-4 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-2 transition-all shadow-lg shadow-indigo-600/30">
+            <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+            <span>Confirm & View Proof</span>
+        </button>
+    </div>
+
+    <!-- Mobile Modal Drawer: Proof Card Preview -->
+    <div id="proofModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 p-0 sm:p-4">
+        <div id="proofModalContent" class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 space-y-4 transform translate-y-full transition-transform duration-300 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="receipt" class="w-5 h-5 text-indigo-400"></i>
+                    <h3 class="text-sm font-bold text-white">Proof of Delivery Voucher</h3>
+                </div>
+                <button type="button" onclick="closeProofModal()" class="p-1.5 text-slate-400 hover:text-white bg-slate-800 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Downloadable Card Graphic -->
+            <div id="receiptCardContainer" class="bg-slate-950 text-white border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3 relative overflow-hidden">
+                <div class="flex justify-between items-start border-b border-slate-800 pb-2">
+                    <div>
+                        <span class="text-[9px] font-mono tracking-widest text-indigo-400 uppercase block">Verified Receipt</span>
+                        <h4 class="text-sm font-bold text-white tracking-wide" id="cardReceiptId">#RC-000000</h4>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase">SIGNED & VERIFIED</span>
+                </div>
+
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Tracking #:</span>
+                        <span class="font-mono font-semibold text-slate-200" id="cardTracking">---</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Recipient:</span>
+                        <span class="font-semibold text-slate-100" id="cardRecipient">---</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Received By:</span>
+                        <span class="text-indigo-300" id="cardReceivedBy">---</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Timestamp:</span>
+                        <span class="font-mono text-slate-300" id="cardTimestamp">---</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Condition:</span>
+                        <span class="text-emerald-400 font-medium" id="cardCondition">---</span>
+                    </div>
+                </div>
+
+                <!-- Embedded Signature -->
+                <div class="pt-2 border-t border-slate-800">
+                    <span class="text-[9px] uppercase font-mono text-slate-500 block text-center mb-1">Digital Signature Record</span>
+                    <div class="w-full h-20 bg-white rounded-xl flex items-center justify-center p-2">
+                        <img id="cardSigImage" src="" alt="Captured Signature" class="max-h-full max-w-full object-contain">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Actions -->
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button type="button" onclick="downloadReceiptCard()" class="py-3 px-3 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 shadow-md">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>Export Voucher PNG</span>
+                </button>
+                <button type="button" onclick="closeProofModal()" class="py-3 px-3 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 text-xs font-semibold rounded-xl flex items-center justify-center">
+                    <span>Done</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile History Drawer -->
+    <div id="historyDrawer" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-end justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        <div id="historyDrawerContent" class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-t-3xl p-5 space-y-4 transform translate-y-full transition-transform duration-300 max-h-[80vh] flex flex-col">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="history" class="w-5 h-5 text-indigo-400"></i>
+                    <h3 class="text-sm font-bold text-white">Delivery Session History</h3>
+                </div>
+                <button type="button" onclick="closeHistoryDrawer()" class="p-1.5 text-slate-400 hover:text-white bg-slate-800 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div id="historyList" class="flex-1 overflow-y-auto space-y-2.5 pr-1">
+                <p class="text-xs text-slate-500 text-center py-6">No saved receipts in this session yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Toast Notification -->
+    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 transform -translate-y-16 opacity-0 transition-all duration-300 pointer-events-none max-w-xs w-full px-4">
+        <div class="bg-slate-800 border border-slate-700 text-white text-xs font-medium px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-2.5">
+            <i data-lucide="info" id="toastIcon" class="w-4 h-4 text-indigo-400 flex-shrink-0"></i>
+            <span id="toastMessage" class="truncate">Notification message</span>
+        </div>
+    </div>
+
+    <!-- Embedded Mobile Application Script -->
+    <script>
+        const canvas = document.getElementById('sigCanvas');
+        const ctx = canvas.getContext('2d');
+        const strokeCounterEl = document.getElementById('strokeCounter');
+
+        let isDrawing = false;
+        let currentPenColor = '#000000';
+        let currentLineWidth = 3;
+        let strokes = [];
+        let currentPath = [];
+        let savedReceipts = [];
+
+        window.addEventListener('load', () => {
+            lucide.createIcons();
+            resizeCanvas();
+            initDefaultTimestamp();
+        });
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            redrawCanvasFromHistory();
+        });
+
+        function initDefaultTimestamp() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('deliveryTimestamp').value = now.toISOString().slice(0, 16);
+        }
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            setupCanvasContext();
+        }
+
+        function setupCanvasContext() {
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = currentPenColor;
+            ctx.lineWidth = currentLineWidth;
+        }
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function startDrawing(e) {
+            e.preventDefault();
+            isDrawing = true;
+            const pos = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            
+            currentPath = [{
+                x: pos.x,
+                y: pos.y,
+                color: currentPenColor,
+                width: currentLineWidth
+            }];
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+
+            currentPath.push({
+                x: pos.x,
+                y: pos.y,
+                color: currentPenColor,
+                width: currentLineWidth
+            });
+        }
+
+        function stopDrawing() {
+            if (!isDrawing) return;
+            isDrawing = false;
+            ctx.closePath();
+            
+            if (currentPath.length > 0) {
+                strokes.push([...currentPath]);
+                updateStrokeCounter();
+            }
+        }
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseleave', stopDrawing);
+
+        canvas.addEventListener('touchstart', startDrawing, { passive: false });
+        canvas.addEventListener('touchmove', draw, { passive: false });
+        canvas.addEventListener('touchend', stopDrawing);
+
+        function setPenColor(color) {
+            currentPenColor = color;
+            ctx.strokeStyle = color;
+
+            ['btnColorBlack', 'btnColorBlue', 'btnColorRed'].forEach(id => {
+                const btn = document.getElementById(id);
+                btn.classList.remove('ring-2', 'ring-indigo-500/30', 'border-indigo-500');
+                btn.classList.add('border-transparent');
+            });
+
+            if (color === '#000000') document.getElementById('btnColorBlack').classList.add('border-indigo-500', 'ring-2', 'ring-indigo-500/30');
+            if (color === '#1d4ed8') document.getElementById('btnColorBlue').classList.add('border-indigo-500', 'ring-2', 'ring-indigo-500/30');
+            if (color === '#dc2626') document.getElementById('btnColorRed').classList.add('border-indigo-500', 'ring-2', 'ring-indigo-500/30');
+        }
+
+        function updateStrokeWidth(val) {
+            currentLineWidth = parseFloat(val);
+            ctx.lineWidth = currentLineWidth;
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            strokes = [];
+            updateStrokeCounter();
+            showToast('Signature canvas cleared', 'info');
+        }
+
+        function undoLastStroke() {
+            if (strokes.length === 0) return;
+            strokes.pop();
+            redrawCanvasFromHistory();
+            updateStrokeCounter();
+        }
+
+        function redrawCanvasFromHistory() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            strokes.forEach(stroke => {
+                if (stroke.length < 2) return;
+                ctx.beginPath();
+                ctx.strokeStyle = stroke[0].color;
+                ctx.lineWidth = stroke[0].width;
+                ctx.moveTo(stroke[0].x, stroke[0].y);
+                for (let i = 1; i < stroke.length; i++) {
+                    ctx.lineTo(stroke[i].x, stroke[i].y);
+                }
+                ctx.stroke();
+                ctx.closePath();
+            });
+            setupCanvasContext();
+        }
+
+        function updateStrokeCounter() {
+            strokeCounterEl.textContent = `${strokes.length} Strokes`;
+        }
+
+        function exportPNGSignatureOnly() {
+            if (strokes.length === 0) {
+                showToast('Please capture a signature first!', 'alert');
+                return;
+            }
+            const dataUrl = canvas.toDataURL('image/png');
+            const tracking = document.getElementById('trackingNo').value.trim() || 'mobile_sig';
+            const link = document.createElement('a');
+            link.download = `Signature_${tracking}.png`;
+            link.href = dataUrl;
+            link.click();
+            showToast('Signature PNG saved to gallery!', 'success');
+        }
+
+        function generateAndSaveProof() {
+            const tracking = document.getElementById('trackingNo').value.trim();
+            const recipient = document.getElementById('recipientName').value.trim();
+
+            if (!tracking) {
+                document.getElementById('trackingNo').focus();
+                showToast('Please enter Order/Tracking #', 'alert');
+                return;
+            }
+            if (!recipient) {
+                document.getElementById('recipientName').focus();
+                showToast('Please enter Recipient Name', 'alert');
+                return;
+            }
+            if (strokes.length === 0) {
+                showToast('Recipient touch signature required', 'alert');
+                return;
+            }
+
+            const receiptId = 'RC-' + Math.floor(100000 + Math.random() * 900000);
+            const rawTime = document.getElementById('deliveryTimestamp').value;
+            const timeFormatted = rawTime ? new Date(rawTime).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now';
+
+            const sigData = canvas.toDataURL('image/png');
+
+            document.getElementById('cardReceiptId').textContent = '#' + receiptId;
+            document.getElementById('cardTracking').textContent = tracking;
+            document.getElementById('cardRecipient').textContent = recipient;
+            document.getElementById('cardReceivedBy').textContent = document.getElementById('receivedBy').value;
+            document.getElementById('cardTimestamp').textContent = timeFormatted;
+            document.getElementById('cardCondition').textContent = document.getElementById('deliveryCondition').value;
+            document.getElementById('cardSigImage').src = sigData;
+
+            savedReceipts.unshift({
+                id: receiptId,
+                tracking,
+                recipient,
+                timestamp: timeFormatted,
+                sigData
+            });
+
+            document.getElementById('historyBadge').textContent = savedReceipts.length;
+            renderHistoryList();
+            openProofModal();
+        }
+
+        function openProofModal() {
+            const modal = document.getElementById('proofModal');
+            const content = document.getElementById('proofModalContent');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            content.classList.remove('translate-y-full');
+        }
+
+        function closeProofModal() {
+            const modal = document.getElementById('proofModal');
+            const content = document.getElementById('proofModalContent');
+            content.classList.add('translate-y-full');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function openHistoryDrawer() {
+            const drawer = document.getElementById('historyDrawer');
+            const content = document.getElementById('historyDrawerContent');
+            drawer.classList.remove('opacity-0', 'pointer-events-none');
+            content.classList.remove('translate-y-full');
+        }
+
+        function closeHistoryDrawer() {
+            const drawer = document.getElementById('historyDrawer');
+            const content = document.getElementById('historyDrawerContent');
+            content.classList.add('translate-y-full');
+            drawer.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function renderHistoryList() {
+            const container = document.getElementById('historyList');
+            if (savedReceipts.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">No saved receipts in this session yet.</p>`;
+                return;
+            }
+
+            container.innerHTML = savedReceipts.map(r => `
+                <div class="bg-slate-800 border border-slate-700/80 rounded-xl p-3 flex items-center justify-between">
+                    <div>
+                        <div class="text-xs font-bold text-white flex items-center space-x-1.5">
+                            <span class="text-indigo-400 font-mono">${r.id}</span>
+                            <span>•</span>
+                            <span class="truncate max-w-[140px]">${r.tracking}</span>
+                        </div>
+                        <div class="text-[10px] text-slate-400">${r.recipient} (${r.timestamp})</div>
+                    </div>
+                    <button onclick="downloadHistoryRecord('${r.id}')" class="p-2 bg-indigo-600/20 text-indigo-300 rounded-lg text-xs font-medium border border-indigo-500/30">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function downloadHistoryRecord(id) {
+            const rec = savedReceipts.find(x => x.id === id);
+            if (!rec) return;
+            const link = document.createElement('a');
+            link.download = `Proof_${rec.id}_${rec.tracking}.png`;
+            link.href = rec.sigData;
+            link.click();
+            showToast(`Downloaded signature ${rec.id}`, 'info');
+        }
+
+        function downloadReceiptCard() {
+            const el = document.getElementById('receiptCardContainer');
+            html2canvas(el, { backgroundColor: null, scale: 2 }).then(canvasImg => {
+                const link = document.createElement('a');
+                link.download = `Proof_Voucher_${document.getElementById('cardTracking').textContent}.png`;
+                link.href = canvasImg.toDataURL('image/png');
+                link.click();
+                showToast('Receipt voucher saved!', 'success');
+            });
+        }
+
+        function showToast(msg, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = msg;
+
+            if (type === 'success') {
+                toastIcon.setAttribute('data-lucide', 'check-circle-2');
+                toastIcon.className = 'w-4 h-4 text-emerald-400 flex-shrink-0';
+            } else if (type === 'alert') {
+                toastIcon.setAttribute('data-lucide', 'alert-circle');
+                toastIcon.className = 'w-4 h-4 text-amber-400 flex-shrink-0';
+            } else {
+                toastIcon.setAttribute('data-lucide', 'info');
+                toastIcon.className = 'w-4 h-4 text-indigo-400 flex-shrink-0';
+            }
+            lucide.createIcons();
+
+            toast.classList.remove('-translate-y-16', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('-translate-y-16', 'opacity-0');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
