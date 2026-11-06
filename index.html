@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mobile Proof of Delivery & Signature Pad</title>
+    <title>Mobile Document Receiving Proof & Signature Pad</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- html2canvas for receipt export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -37,11 +39,11 @@
     <header class="bg-slate-800/90 backdrop-blur-md border-b border-slate-700/60 sticky top-0 z-30 px-4 py-3 flex items-center justify-between">
         <div class="flex items-center space-x-2.5">
             <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md shadow-indigo-900/40">
-                <i data-lucide="package-check" class="w-5 h-5"></i>
+                <i data-lucide="file-check-2" class="w-5 h-5"></i>
             </div>
             <div>
-                <h1 class="text-base font-bold text-white leading-tight">POD Mobile</h1>
-                <p class="text-[11px] text-slate-400 font-medium">Recipient Proof Capture</p>
+                <h1 class="text-base font-bold text-white leading-tight">DocProof Mobile</h1>
+                <p class="text-[11px] text-slate-400 font-medium">Document Receipt Verification</p>
             </div>
         </div>
         <div class="flex items-center space-x-2">
@@ -55,8 +57,8 @@
     <!-- Main Mobile Content Body -->
     <main class="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-4">
 
-        <!-- Card 1: Quick Delivery Details Form -->
-        <div class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-4 shadow-lg space-y-3">
+        <!-- Card 1: Document Info Form -->
+        <div class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-4 shadow-lg space-y-3 backdrop-blur-sm">
             <div class="flex items-center justify-between border-b border-slate-700/60 pb-2.5">
                 <div class="flex items-center space-x-2">
                     <i data-lucide="file-text" class="w-4 h-4 text-indigo-400"></i>
@@ -66,49 +68,46 @@
             </div>
 
             <form id="mobileForm" onsubmit="event.preventDefault();" class="space-y-3">
-                <!-- Order/Tracking No -->
+                <!-- Document Title -->
                 <div>
                     <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                        Document Title # <span class="text-red-400">*</span>
+                        Document Title <span class="text-red-400">*</span>
                     </label>
                     <div class="relative">
-                        <i data-lucide="hash" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
-                        <input type="text" id="trackingNo" placeholder="e.g. Lapchole" required
-                            class="w-full pl-9 pr-3 py-3 bg-slate-900/80 border border-slate-700 rounded-xl text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                        <i data-lucide="heading" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                        <input type="text" id="docTitle" placeholder="e.g. Q4 Financial Audit Report" required
+                            class="w-full pl-9 pr-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                    </div>
+                </div>
+
+                <!-- Receiving Department Smart Dropdown -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                        Receiving Department <span class="text-red-400">*</span>
+                    </label>
+                    <div class="relative">
+                        <i data-lucide="building-2" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                        <input type="text" id="receivingDept" list="departmentDatalist" placeholder="Select or type new department..." required
+                            class="w-full pl-9 pr-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                        <datalist id="departmentDatalist">
+                            <!-- Populated dynamically via JS -->
+                        </datalist>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
-                    <!-- Recipient Name -->
+                    <!-- Recipient Email Address -->
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                            Recipient Name <span class="text-red-400">*</span>
+                            Recipient Email <span class="text-red-400">*</span>
                         </label>
                         <div class="relative">
-                            <i data-lucide="user" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
-                            <input type="text" id="recipientName" placeholder="Full Name" required
-                                class="w-full pl-9 pr-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                            <i data-lucide="mail" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                            <input type="email" id="recipientEmail" placeholder="name@company.com" required
+                                class="w-full pl-9 pr-2 py-2 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
                     </div>
 
-                    <!-- Received By Relationship -->
-                    <div>
-                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                            Received By
-                        </label>
-                        <div class="relative">
-                            <i data-lucide="users" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
-                            <select id="receivedBy" class="w-full pl-9 pr-2 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none">
-                                <option value="Self">Self (Customer)</option>
-                                <option value="Authorized Rep">Authorized Rep</option>
-                                <option value="Building Guard / Reception">Guard / Reception</option>
-                                <option value="Family Member">Family Member</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
                     <!-- Date & Time Timestamp -->
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
@@ -117,28 +116,16 @@
                         <input type="datetime-local" id="deliveryTimestamp"
                             class="w-full px-2.5 py-2 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
-
-                    <!-- Delivery Status -->
-                    <div>
-                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                            Condition
-                        </label>
-                        <select id="deliveryCondition" class="w-full px-2.5 py-2 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="Delivered - Intact">Intact & Good</option>
-                            <option value="Box Damaged - Goods OK">Box Damaged</option>
-                            <option value="Partial Delivery">Partial Delivery</option>
-                        </select>
-                    </div>
                 </div>
             </form>
         </div>
 
         <!-- Card 2: Mobile Signature Capture Pad -->
-        <div class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-4 shadow-lg space-y-3">
+        <div class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-4 shadow-lg space-y-3 backdrop-blur-sm">
             <div class="flex items-center justify-between border-b border-slate-700/60 pb-2.5">
                 <div class="flex items-center space-x-2">
                     <i data-lucide="pen-tool" class="w-4 h-4 text-indigo-400"></i>
-                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">2. Touch Signature</h2>
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">2. Recipient Signature</h2>
                 </div>
                 <span id="strokeCounter" class="text-[11px] text-slate-400 font-mono">0 Strokes</span>
             </div>
@@ -174,10 +161,10 @@
             </div>
 
             <!-- Responsive Signature Canvas Container -->
-            <div class="relative w-full h-56 bg-slate-100 rounded-xl overflow-hidden signature-grid border-2 border-slate-600 flex flex-col justify-end">
+            <div class="relative w-full h-52 bg-slate-100 rounded-xl overflow-hidden signature-grid border-2 border-slate-600 flex flex-col justify-end">
                 <div class="absolute bottom-8 left-4 right-4 border-b-2 border-dashed border-slate-400 pointer-events-none flex justify-between items-center pb-1">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                        <i data-lucide="x" class="w-3 h-3"></i> Sign inside box
+                        <i data-lucide="x" class="w-3 h-3"></i> Touch Sign Here
                     </span>
                     <span class="text-[9px] font-mono text-slate-400">Digital Touch Verified</span>
                 </div>
@@ -188,10 +175,12 @@
 
     <!-- Mobile Bottom Fixed Quick Actions Bar -->
     <div class="sticky bottom-0 z-20 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 px-4 py-3 max-w-md w-full mx-auto flex items-center gap-2">
-        <button type="button" onclick="exportPNGSignatureOnly()" class="flex-1 py-3 px-3 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center justify-center space-x-1.5 transition-all shadow-md">
-            <i data-lucide="download" class="w-4 h-4 text-slate-400"></i>
-            <span>PNG Signature</span>
+        <!-- Send Email Button (Disabled until Proof Confirmed) -->
+        <button type="button" id="btnSendEmail" disabled onclick="sendDocumentEmail()" class="flex-1 py-3 px-3 bg-slate-800 text-slate-500 border border-slate-700/60 text-xs font-semibold rounded-xl flex items-center justify-center space-x-1.5 transition-all cursor-not-allowed opacity-60">
+            <i data-lucide="mail" class="w-4 h-4"></i>
+            <span>Send Email</span>
         </button>
+        <!-- Confirm & View Proof Button -->
         <button type="button" onclick="generateAndSaveProof()" class="flex-[1.4] py-3 px-4 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-2 transition-all shadow-lg shadow-indigo-600/30">
             <i data-lucide="check-circle-2" class="w-4 h-4"></i>
             <span>Confirm & View Proof</span>
@@ -204,7 +193,7 @@
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div class="flex items-center space-x-2">
                     <i data-lucide="receipt" class="w-5 h-5 text-indigo-400"></i>
-                    <h3 class="text-sm font-bold text-white">Proof of Delivery Voucher</h3>
+                    <h3 class="text-sm font-bold text-white">Document Proof Voucher</h3>
                 </div>
                 <button type="button" onclick="closeProofModal()" class="p-1.5 text-slate-400 hover:text-white bg-slate-800 rounded-lg">
                     <i data-lucide="x" class="w-5 h-5"></i>
@@ -215,38 +204,34 @@
             <div id="receiptCardContainer" class="bg-slate-950 text-white border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3 relative overflow-hidden">
                 <div class="flex justify-between items-start border-b border-slate-800 pb-2">
                     <div>
-                        <span class="text-[9px] font-mono tracking-widest text-indigo-400 uppercase block">Verified Receipt</span>
-                        <h4 class="text-sm font-bold text-white tracking-wide" id="cardReceiptId">#RC-000000</h4>
+                        <span class="text-[9px] font-mono tracking-widest text-indigo-400 uppercase block">Document Receipt</span>
+                        <h4 class="text-sm font-bold text-white tracking-wide" id="cardReceiptId">#DOC-000000</h4>
                     </div>
-                    <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase">SIGNED & VERIFIED</span>
+                    <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase">RECEIVED & SIGNED</span>
                 </div>
 
                 <div class="space-y-2 text-xs">
                     <div class="flex justify-between">
-                        <span class="text-slate-400">Tracking #:</span>
-                        <span class="font-mono font-semibold text-slate-200" id="cardTracking">---</span>
+                        <span class="text-slate-400">Document Title:</span>
+                        <span class="font-semibold text-slate-100 truncate max-w-[180px]" id="cardDocTitle">---</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-slate-400">Recipient:</span>
-                        <span class="font-semibold text-slate-100" id="cardRecipient">---</span>
+                        <span class="text-slate-400">Department:</span>
+                        <span class="text-indigo-300 font-medium" id="cardDept">---</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-slate-400">Received By:</span>
-                        <span class="text-indigo-300" id="cardReceivedBy">---</span>
+                        <span class="text-slate-400">Recipient Email:</span>
+                        <span class="font-mono text-slate-300 text-[11px]" id="cardEmail">---</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-slate-400">Timestamp:</span>
                         <span class="font-mono text-slate-300" id="cardTimestamp">---</span>
                     </div>
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Condition:</span>
-                        <span class="text-emerald-400 font-medium" id="cardCondition">---</span>
-                    </div>
                 </div>
 
                 <!-- Embedded Signature -->
                 <div class="pt-2 border-t border-slate-800">
-                    <span class="text-[9px] uppercase font-mono text-slate-500 block text-center mb-1">Digital Signature Record</span>
+                    <span class="text-[9px] uppercase font-mono text-slate-500 block text-center mb-1">Authorized Signature</span>
                     <div class="w-full h-20 bg-white rounded-xl flex items-center justify-center p-2">
                         <img id="cardSigImage" src="" alt="Captured Signature" class="max-h-full max-w-full object-contain">
                     </div>
@@ -255,12 +240,13 @@
 
             <!-- Modal Actions -->
             <div class="grid grid-cols-2 gap-3 pt-2">
-                <button type="button" onclick="downloadReceiptCard()" class="py-3 px-3 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 shadow-md">
-                    <i data-lucide="download" class="w-4 h-4"></i>
-                    <span>Export Voucher PNG</span>
+                <button type="button" onclick="sendDocumentEmail()" class="py-3 px-3 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 shadow-md">
+                    <i data-lucide="mail" class="w-4 h-4"></i>
+                    <span>Send Notification</span>
                 </button>
-                <button type="button" onclick="closeProofModal()" class="py-3 px-3 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 text-xs font-semibold rounded-xl flex items-center justify-center">
-                    <span>Done</span>
+                <button type="button" onclick="downloadReceiptCard()" class="py-3 px-3 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 text-xs font-semibold rounded-xl flex items-center justify-center space-x-1">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>Export Voucher</span>
                 </button>
             </div>
         </div>
@@ -272,7 +258,7 @@
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div class="flex items-center space-x-2">
                     <i data-lucide="history" class="w-5 h-5 text-indigo-400"></i>
-                    <h3 class="text-sm font-bold text-white">Delivery Session History</h3>
+                    <h3 class="text-sm font-bold text-white">Received Document History</h3>
                 </div>
                 <button type="button" onclick="closeHistoryDrawer()" class="p-1.5 text-slate-400 hover:text-white bg-slate-800 rounded-lg">
                     <i data-lucide="x" class="w-5 h-5"></i>
@@ -280,7 +266,7 @@
             </div>
             
             <div id="historyList" class="flex-1 overflow-y-auto space-y-2.5 pr-1">
-                <p class="text-xs text-slate-500 text-center py-6">No saved receipts in this session yet.</p>
+                <p class="text-xs text-slate-500 text-center py-6">No saved documents in this session yet.</p>
             </div>
         </div>
     </div>
@@ -293,8 +279,21 @@
         </div>
     </div>
 
-    <!-- Embedded Mobile Application Script -->
+    <!-- Embedded Application Logic -->
     <script>
+        // Supabase Initialization (Replace placeholders with your real credentials)
+        const SUPABASE_URL = "https://your-supabase-project.supabase.co";
+        const SUPABASE_ANON_KEY = "your-anon-key";
+        let supabaseClient = null;
+
+        try {
+            if (SUPABASE_URL !== "https://your-supabase-project.supabase.co") {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        } catch(e) {
+            console.warn("Supabase client init skipped: using localStorage fallback.");
+        }
+
         const canvas = document.getElementById('sigCanvas');
         const ctx = canvas.getContext('2d');
         const strokeCounterEl = document.getElementById('strokeCounter');
@@ -305,17 +304,50 @@
         let strokes = [];
         let currentPath = [];
         let savedReceipts = [];
+        let currentConfirmedRecord = null;
+
+        // Default Smart Department List
+        let defaultDepartments = ['Human Resources', 'Finance & Accounting', 'Legal & Compliance', 'Operations', 'IT & Infrastructure'];
 
         window.addEventListener('load', () => {
             lucide.createIcons();
             resizeCanvas();
             initDefaultTimestamp();
+            initSmartDepartmentDropdown();
         });
 
         window.addEventListener('resize', () => {
             resizeCanvas();
             redrawCanvasFromHistory();
         });
+
+        function initSmartDepartmentDropdown() {
+            const stored = localStorage.getItem('docProof_departments');
+            let depts = defaultDepartments;
+            if (stored) {
+                try { depts = JSON.parse(stored); } catch(e) {}
+            }
+            populateDatalist(depts);
+        }
+
+        function populateDatalist(depts) {
+            const datalist = document.getElementById('departmentDatalist');
+            datalist.innerHTML = depts.map(d => `<option value="${d}">`).join('');
+        }
+
+        function saveNewDepartmentIfAny(deptName) {
+            if (!deptName) return;
+            const stored = localStorage.getItem('docProof_departments');
+            let depts = defaultDepartments;
+            if (stored) {
+                try { depts = JSON.parse(stored); } catch(e) {}
+            }
+            if (!depts.some(d => d.toLowerCase() === deptName.toLowerCase())) {
+                depts.push(deptName);
+                localStorage.setItem('docProof_departments', JSON.stringify(depts));
+                populateDatalist(depts);
+            }
+        }
 
         function initDefaultTimestamp() {
             const now = new Date();
@@ -458,32 +490,41 @@
             strokeCounterEl.textContent = `${strokes.length} Strokes`;
         }
 
-        function exportPNGSignatureOnly() {
-            if (strokes.length === 0) {
-                showToast('Please capture a signature first!', 'alert');
-                return;
+        async function saveToSupabase(payload) {
+            if (!supabaseClient) return false;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('document_proofs')
+                    .insert([payload]);
+                if (error) {
+                    console.error("Supabase Error:", error);
+                    return false;
+                }
+                return true;
+            } catch(err) {
+                console.error("Supabase Connection Exception:", err);
+                return false;
             }
-            const dataUrl = canvas.toDataURL('image/png');
-            const tracking = document.getElementById('trackingNo').value.trim() || 'mobile_sig';
-            const link = document.createElement('a');
-            link.download = `Signature_${tracking}.png`;
-            link.href = dataUrl;
-            link.click();
-            showToast('Signature PNG saved to gallery!', 'success');
         }
 
-        function generateAndSaveProof() {
-            const tracking = document.getElementById('trackingNo').value.trim();
-            const recipient = document.getElementById('recipientName').value.trim();
+        async function generateAndSaveProof() {
+            const title = document.getElementById('docTitle').value.trim();
+            const dept = document.getElementById('receivingDept').value.trim();
+            const email = document.getElementById('recipientEmail').value.trim();
 
-            if (!tracking) {
-                document.getElementById('trackingNo').focus();
-                showToast('Please enter Order/Tracking #', 'alert');
+            if (!title) {
+                document.getElementById('docTitle').focus();
+                showToast('Please enter Document Title', 'alert');
                 return;
             }
-            if (!recipient) {
-                document.getElementById('recipientName').focus();
-                showToast('Please enter Recipient Name', 'alert');
+            if (!dept) {
+                document.getElementById('receivingDept').focus();
+                showToast('Please enter Receiving Department', 'alert');
+                return;
+            }
+            if (!email) {
+                document.getElementById('recipientEmail').focus();
+                showToast('Please enter Recipient Email', 'alert');
                 return;
             }
             if (strokes.length === 0) {
@@ -491,31 +532,78 @@
                 return;
             }
 
-            const receiptId = 'RC-' + Math.floor(100000 + Math.random() * 900000);
+            // Save new department dynamically to datalist
+            saveNewDepartmentIfAny(dept);
+
+            const receiptId = 'DOC-' + Math.floor(100000 + Math.random() * 900000);
             const rawTime = document.getElementById('deliveryTimestamp').value;
-            const timeFormatted = rawTime ? new Date(rawTime).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now';
+            const timeFormatted = rawTime ? new Date(rawTime).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now';
 
             const sigData = canvas.toDataURL('image/png');
 
-            document.getElementById('cardReceiptId').textContent = '#' + receiptId;
-            document.getElementById('cardTracking').textContent = tracking;
-            document.getElementById('cardRecipient').textContent = recipient;
-            document.getElementById('cardReceivedBy').textContent = document.getElementById('receivedBy').value;
-            document.getElementById('cardTimestamp').textContent = timeFormatted;
-            document.getElementById('cardCondition').textContent = document.getElementById('deliveryCondition').value;
-            document.getElementById('cardSigImage').src = sigData;
-
-            savedReceipts.unshift({
+            currentConfirmedRecord = {
                 id: receiptId,
-                tracking,
-                recipient,
+                title,
+                dept,
+                email,
                 timestamp: timeFormatted,
                 sigData
+            };
+
+            // Attempt save to Supabase
+            const supabaseSuccess = await saveToSupabase({
+                receipt_id: receiptId,
+                document_title: title,
+                receiving_department: dept,
+                recipient_email: email,
+                timestamp: timeFormatted,
+                signature_data: sigData
             });
 
+            if (supabaseSuccess) {
+                showToast('Saved to Supabase database!', 'success');
+            } else {
+                showToast('Confirmed & saved to local session', 'success');
+            }
+
+            // Update UI elements in Modal
+            document.getElementById('cardReceiptId').textContent = '#' + receiptId;
+            document.getElementById('cardDocTitle').textContent = title;
+            document.getElementById('cardDept').textContent = dept;
+            document.getElementById('cardEmail').textContent = email;
+            document.getElementById('cardTimestamp').textContent = timeFormatted;
+            document.getElementById('cardSigImage').src = sigData;
+
+            savedReceipts.unshift(currentConfirmedRecord);
             document.getElementById('historyBadge').textContent = savedReceipts.length;
             renderHistoryList();
+
+            // Enable Send Email Button
+            enableSendEmailButton();
             openProofModal();
+        }
+
+        function enableSendEmailButton() {
+            const btn = document.getElementById('btnSendEmail');
+            btn.disabled = false;
+            btn.classList.remove('bg-slate-800', 'text-slate-500', 'border-slate-700/60', 'cursor-not-allowed', 'opacity-60');
+            btn.classList.add('bg-emerald-600', 'hover:bg-emerald-500', 'text-white', 'border-emerald-500/40', 'active:scale-95', 'shadow-lg', 'shadow-emerald-900/30');
+        }
+
+        function sendDocumentEmail() {
+            if (!currentConfirmedRecord) {
+                showToast('Please confirm and view proof first!', 'alert');
+                return;
+            }
+
+            const rec = currentConfirmedRecord;
+            const subject = encodeURIComponent(`Document Receipt Confirmation: ${rec.title}`);
+            const bodyText = `Dear Recipient,\n\nThank you for confirming receipt of the document.\n\nDocument Details:\n- Document Title: ${rec.title}\n- Receiving Department: ${rec.dept}\n- Date & Time: ${rec.timestamp}\n- Reference ID: #${rec.id}\n\nKindly contact us at local 664 for further updates or queries.\n\nBest regards,\nDocument Tracking Hub`;
+
+            const mailtoUrl = `mailto:${rec.email}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
+            
+            window.location.href = mailtoUrl;
+            showToast(`Opening email compose for ${rec.email}`, 'info');
         }
 
         function openProofModal() {
@@ -549,7 +637,7 @@
         function renderHistoryList() {
             const container = document.getElementById('historyList');
             if (savedReceipts.length === 0) {
-                container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">No saved receipts in this session yet.</p>`;
+                container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">No saved documents in this session yet.</p>`;
                 return;
             }
 
@@ -559,9 +647,9 @@
                         <div class="text-xs font-bold text-white flex items-center space-x-1.5">
                             <span class="text-indigo-400 font-mono">${r.id}</span>
                             <span>•</span>
-                            <span class="truncate max-w-[140px]">${r.tracking}</span>
+                            <span class="truncate max-w-[140px]">${r.title}</span>
                         </div>
-                        <div class="text-[10px] text-slate-400">${r.recipient} (${r.timestamp})</div>
+                        <div class="text-[10px] text-slate-400">${r.dept} (${r.timestamp})</div>
                     </div>
                     <button onclick="downloadHistoryRecord('${r.id}')" class="p-2 bg-indigo-600/20 text-indigo-300 rounded-lg text-xs font-medium border border-indigo-500/30">
                         <i data-lucide="download" class="w-3.5 h-3.5"></i>
@@ -575,7 +663,7 @@
             const rec = savedReceipts.find(x => x.id === id);
             if (!rec) return;
             const link = document.createElement('a');
-            link.download = `Proof_${rec.id}_${rec.tracking}.png`;
+            link.download = `DocProof_${rec.id}.png`;
             link.href = rec.sigData;
             link.click();
             showToast(`Downloaded signature ${rec.id}`, 'info');
@@ -585,10 +673,10 @@
             const el = document.getElementById('receiptCardContainer');
             html2canvas(el, { backgroundColor: null, scale: 2 }).then(canvasImg => {
                 const link = document.createElement('a');
-                link.download = `Proof_Voucher_${document.getElementById('cardTracking').textContent}.png`;
+                link.download = `Doc_Voucher_${document.getElementById('cardReceiptId').textContent}.png`;
                 link.href = canvasImg.toDataURL('image/png');
                 link.click();
-                showToast('Receipt voucher saved!', 'success');
+                showToast('Voucher card saved!', 'success');
             });
         }
 
