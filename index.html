@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Document Receiving Gateway</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      touch-action: manipulation;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    canvas {
+      touch-action: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 sm:p-6">
+
+  <!-- Header -->
+  <header class="w-full max-w-md mx-auto mb-4 flex items-center justify-between">
+    <div class="flex items-center space-x-2">
+      <div class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+      <h1 class="text-base font-bold tracking-tight text-slate-100" id="headerTitle">Portal Authentication</h1>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span id="userBadge" class="hidden text-[10px] px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-mono"></span>
+      <button id="logoutBtn" onclick="handleLogout()" class="hidden text-xs text-slate-400 hover:text-red-400 underline">Logout</button>
+    </div>
+  </header>
+
+  <!-- ================= VIEW 1: LOGIN PAGE ================= -->
+  <section id="loginView" class="w-full max-w-md mx-auto space-y-4 my-auto">
+    <div class="glass-card rounded-2xl p-6 shadow-2xl space-y-5">
+      <div class="text-center space-y-1">
+        <h2 class="text-xl font-bold text-slate-100">Welcome Back</h2>
+        <p class="text-xs text-slate-400">Sign in to access the receiving portal</p>
+      </div>
+
+      <form onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Email Address</label>
+          <input type="email" id="loginEmail" required placeholder="user@company.com" 
+            class="w-full px-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">User ID (UID)</label>
+          <input type="password" id="loginUid" required placeholder="Enter your UID" 
+            class="w-full px-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors">
+        </div>
+
+        <div id="loginError" class="hidden text-xs text-red-400 bg-red-950/40 border border-red-800/50 p-2.5 rounded-xl text-center"></div>
+
+        <button type="submit" id="loginBtn"
+          class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-900/30 transition-all">
+          Sign In
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ================= VIEW 2: LANDING PAGE ================= -->
+  <section id="landingView" class="w-full max-w-md mx-auto space-y-5 my-auto hidden">
+    <div class="glass-card rounded-2xl p-6 shadow-2xl space-y-6 text-center">
+      <div class="space-y-1">
+        <span class="text-xs font-semibold tracking-wider text-emerald-400 uppercase">Gateway Access</span>
+        <h2 class="text-xl font-bold text-slate-100">Select Platform</h2>
+        <p class="text-xs text-slate-400">Logged in as <span id="landingUserName" class="text-slate-200 font-semibold">User</span></p>
+      </div>
+
+      <div class="space-y-3 pt-2">
+        <!-- Receiving Platform Button (Links to signpad.html) -->
+        <a href="signpad.html" 
+          class="w-full py-4 px-5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-bold rounded-2xl text-sm shadow-lg shadow-emerald-900/40 transition-all flex items-center justify-between group block">
+          <div class="flex items-center space-x-3">
+            <div class="p-2 bg-emerald-700/50 rounded-xl">
+              <svg class="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            </div>
+            <span class="tracking-wide">RECEIVING PLATFORM</span>
+          </div>
+          <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+        </a>
+
+        <!-- Dashboard Button -->
+        <button disabled 
+          class="w-full py-4 px-5 bg-slate-800/60 text-slate-500 border border-slate-700/60 font-bold rounded-2xl text-sm cursor-not-allowed flex items-center justify-between opacity-80">
+          <div class="flex items-center space-x-3">
+            <div class="p-2 bg-slate-800 rounded-xl">
+              <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+            </div>
+            <span class="tracking-wide">DASHBOARD</span>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-500 border border-slate-800">COMING SOON</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="w-full max-w-md mx-auto text-center text-[10px] text-slate-600">
+    Secure Document Receiving Gateway &bull; Powered by Supabase
+  </footer>
+
+  <script>
+    // Supabase Connection
+    const SUPABASE_URL = "https://dideaglufjrautyomrzm.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_-b5NQcuBhQk57Y-tXzDe_A_HR3Im8CH";
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let activeUser = null;
+
+    function navigateTo(viewName) {
+      document.getElementById('loginView').classList.add('hidden');
+      document.getElementById('landingView').classList.add('hidden');
+
+      if (viewName === 'login') {
+        document.getElementById('loginView').classList.remove('hidden');
+        document.getElementById('headerTitle').innerText = 'Portal Authentication';
+        document.getElementById('userBadge').classList.add('hidden');
+        document.getElementById('logoutBtn').classList.add('hidden');
+      } else if (viewName === 'landing') {
+        document.getElementById('landingView').classList.remove('hidden');
+        document.getElementById('headerTitle').innerText = 'Document Gateway';
+      }
+    }
+
+    // Login Authentication Logic against `users` table
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const uid = document.getElementById('loginUid').value.trim();
+      const errorDiv = document.getElementById('loginError');
+      const loginBtn = document.getElementById('loginBtn');
+
+      errorDiv.classList.add('hidden');
+      loginBtn.disabled = true;
+      loginBtn.innerText = 'Verifying...';
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('users')
+          .select('name, emailadd, uid')
+          .eq('emailadd', email)
+          .eq('uid', uid)
+          .single();
+
+        if (error || !data) {
+          throw new Error('Invalid email or User ID.');
+        }
+
+        activeUser = data;
+        localStorage.setItem('doc_gateway_user', JSON.stringify(data));
+
+        document.getElementById('landingUserName').innerText = data.name;
+        document.getElementById('userBadge').innerText = data.name;
+        document.getElementById('userBadge').classList.remove('hidden');
+        document.getElementById('logoutBtn').classList.remove('hidden');
+
+        navigateTo('landing');
+      } catch (err) {
+        errorDiv.innerText = err.message || 'Authentication failed.';
+        errorDiv.classList.remove('hidden');
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.innerText = 'Sign In';
+      }
+    }
+
+    function handleLogout() {
+      activeUser = null;
+      localStorage.removeItem('doc_gateway_user');
+      navigateTo('login');
+    }
+
+    // Auto Session Restore
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedUser = localStorage.getItem('doc_gateway_user');
+      if (savedUser) {
+        activeUser = JSON.parse(savedUser);
+        document.getElementById('landingUserName').innerText = activeUser.name;
+        document.getElementById('userBadge').innerText = activeUser.name;
+        document.getElementById('userBadge').classList.remove('hidden');
+        document.getElementById('logoutBtn').classList.remove('hidden');
+        navigateTo('landing');
+      } else {
+        navigateTo('login');
+      }
+    });
+  </script>
+
+  <ElicitationsGroup message="To expand this gateway system further:">
+    <Elicitation label="Create the separate signpad.html file code linked to this landing page" query="Provide the complete code for signpad.html that pre-fills the logged-in user's name into the received by field and links back to the landing portal." />
+    <Elicitation label="Add role-based access control checking in Supabase" query="Add a role column in the users table to restrict access to certain departments or administrative views." />
+  </ElicitationsGroup>
+
+</body>
+</html>
