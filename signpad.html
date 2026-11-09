@@ -143,7 +143,7 @@
         </div>
         <div class="flex justify-between py-1 border-b border-slate-800">
           <span class="text-slate-500">Email Status:</span>
-          <span id="modalEmailStatus" class="font-medium text-emerald-400 text-right">Sending...</span>
+          <span id="modalEmailStatus" class="font-medium text-emerald-400 text-right">Dispatched via Make.com</span>
         </div>
         <div class="flex justify-between py-1">
           <span class="text-slate-500">Timestamp:</span>
@@ -337,7 +337,7 @@
       return new Blob([u8arr], { type: mime });
     }
 
-    // Confirm & View Proof + Automated HTML Email Trigger Workflow
+    // Confirm & View Proof + Make.com Webhook Auto-Trigger Workflow
     async function confirmAndViewProof() {
       const docTitle = document.getElementById('docTitle').value.trim();
       const receivedBy = document.getElementById('receivedBy').value.trim();
@@ -358,7 +358,7 @@
 
       const confirmBtn = document.getElementById('confirmBtn');
       confirmBtn.disabled = true;
-      confirmBtn.innerHTML = '<span class="animate-pulse">Processing & Dispatching Email...</span>';
+      confirmBtn.innerHTML = '<span class="animate-pulse">Saving & Sending Webhook...</span>';
 
       try {
         const signatureDataURL = canvas.toDataURL('image/png');
@@ -405,78 +405,38 @@
           senderEmail: loggedInUserEmail
         };
 
-        // Construct HTML Email Content inspired by your Apps Script template
-        const bannerUrl = "https://i.imgur.com/CgqeQHP.jpeg";
-        const htmlBody = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; background-color: #f4f4f4; }
-              .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0; }
-              .banner { width: 100%; max-width: 600px; height: auto; display: block; }
-              .content { padding: 25px; }
-              .details-box { background-color: #f8f9fa; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 4px; }
-              .footer { margin-top: 25px; padding-top: 15px; border-top: 1px solid #eeeeee; font-size: 0.9em; color: #666666; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <img src="${bannerUrl}" alt="Document Transmittal Banner" class="banner">
-              <div class="content">
-                <h2>Mabuhay, ${receivedBy}!</h2>
-                <p>Thank you for receiving the document. Kindly contact us at <strong>local 664</strong> for any updates or inquiries.</p>
-                
-                <div class="details-box">
-                  <h3 style="margin-top:0; color:#10b981;">Document Information</h3>
-                  <p style="margin: 5px 0;"><strong>Document No:</strong> ${docNo}</p>
-                  <p style="margin: 5px 0;"><strong>Document Title:</strong> ${docTitle}</p>
-                  <p style="margin: 5px 0;"><strong>Receiving Department:</strong> ${receivingDept}</p>
-                  <p style="margin: 5px 0;"><strong>Timestamp:</strong> ${timestampStr}</p>
-                  <p style="margin: 5px 0;"><strong>Sender:</strong> ${loggedInUserEmail}</p>
-                </div>
-
-                <p>An authorized electronic proof of receipt and signature has been securely logged in our system.</p>
-                
-                <div class="footer">
-                  <p>Warm regards,<br><strong>Perpetual Help Medical Center - Las Piñas</strong><br>Receiving & Dispatch Department</p>
-                </div>
-              </div>
-            </div>
-          </body>
-          </html>
-        `;
-
-        // Trigger Edge Function for auto-sending the HTML email
-        try {
-          await supabaseClient.functions.invoke('send-receiving-email', {
-            body: {
-              sender_email: loggedInUserEmail,
-              recipient_email: recipientEmail,
-              recipient_name: receivedBy,
-              subject: `Document Receiving Notice - [${docNo}] ${docTitle}`,
-              html_body: htmlBody
-            }
-          });
-          document.getElementById('modalEmailStatus').innerText = "Sent Successfully";
-        } catch (mailErr) {
-          console.warn('Edge function email dispatch notice:', mailErr);
-          document.getElementById('modalEmailStatus').innerText = "Logged (Edge Function pending)";
-        }
+        // Send payload to Make.com Webhook URL
+        const makeWebhookUrl = "https://hook.eu1.make.com/m4c1b8mf6n8py2fvt04c7hxa9n48lwx7";
+        
+        await fetch(makeWebhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sender_email: loggedInUserEmail,
+            recipient_email: recipientEmail,
+            recipient_name: receivedBy,
+            doc_no: docNo,
+            doc_title: docTitle,
+            department: receivingDept,
+            timestamp: timestampStr,
+            signature_url: signatureUrl
+          })
+        });
 
         document.getElementById('modalDocNo').innerText = docNo;
         document.getElementById('modalTitle').innerText = docTitle;
         document.getElementById('modalReceivedBy').innerText = receivedBy;
         document.getElementById('modalDept').innerText = receivingDept;
         document.getElementById('modalEmail').innerText = recipientEmail;
+        document.getElementById('modalEmailStatus').innerText = "Sent via Make.com";
         document.getElementById('modalTime').innerText = timestampStr;
         document.getElementById('modalSigImage').src = signatureDataURL;
 
         document.getElementById('proofModal').classList.remove('hidden');
 
       } catch (err) {
-        console.error('Supabase Error:', err);
-        alert('Error saving record: ' + (err.message || JSON.stringify(err)));
+        console.error('Submission Error:', err);
+        alert('Error processing record: ' + (err.message || JSON.stringify(err)));
       } finally {
         confirmBtn.disabled = false;
         confirmBtn.innerHTML = `
@@ -498,11 +458,6 @@
       link.click();
     }
   </script>
-
-  <ElicitationsGroup message="To refine your automated email system further:">
-    <Elicitation label="Provide the code for the Supabase Edge Function using Resend" query="Provide the complete serverless TypeScript code for the Supabase Edge Function that utilizes Resend to dispatch the HTML confirmation email." />
-    <Elicitation label="Add a notification badge count for unsent email queues" query="How can I store unsent email queues in Supabase if the network fails during confirmation?" />
-  </ElicitationsGroup>
 
 </body>
 </html>
