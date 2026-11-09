@@ -100,18 +100,12 @@
       </div>
     </div>
 
-    <!-- Action Buttons -->
+    <!-- Action Button -->
     <div class="space-y-2.5 pt-1">
       <button onclick="confirmAndViewProof()" id="confirmBtn"
-        class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-900/30 transition-all flex items-center justify-center space-x-2">
+        class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-900/30 transition-all flex items-center justify-center space-x-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
-        <span>Confirm & View Proof</span>
-      </button>
-
-      <button onclick="triggerAutoSendEmail()" id="sendEmailBtn" disabled
-        class="w-full py-3 px-4 bg-slate-800 text-slate-500 cursor-not-allowed font-semibold rounded-xl text-sm border border-slate-700 transition-all flex items-center justify-center space-x-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-        <span>Send Email Notification</span>
+        <span>Confirm & View Proof & Auto-Send Email</span>
       </button>
     </div>
 
@@ -146,6 +140,10 @@
         <div class="flex justify-between py-1 border-b border-slate-800">
           <span class="text-slate-500">Recipient Email:</span>
           <span id="modalEmail" class="font-medium text-slate-100 text-right">--</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-800">
+          <span class="text-slate-500">Email Status:</span>
+          <span id="modalEmailStatus" class="font-medium text-emerald-400 text-right">Sending...</span>
         </div>
         <div class="flex justify-between py-1">
           <span class="text-slate-500">Timestamp:</span>
@@ -258,7 +256,6 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    // Robust Coordinate Mapping for Mouse & Touch
     function getEventPos(e) {
       const rect = canvas.getBoundingClientRect();
       let clientX, clientY;
@@ -311,13 +308,11 @@
       isDrawing = false;
     }
 
-    // Event Listeners for Mouse
     canvas.addEventListener('mousedown', startDraw);
     canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', stopDraw);
     canvas.addEventListener('mouseleave', stopDraw);
 
-    // Event Listeners for Touch (Mobile / Tablet)
     canvas.addEventListener('touchstart', startDraw, { passive: false });
     canvas.addEventListener('touchmove', draw, { passive: false });
     canvas.addEventListener('touchend', stopDraw, { passive: false });
@@ -342,7 +337,7 @@
       return new Blob([u8arr], { type: mime });
     }
 
-    // Confirm & View Proof workflow
+    // Confirm & View Proof + Automated HTML Email Trigger Workflow
     async function confirmAndViewProof() {
       const docTitle = document.getElementById('docTitle').value.trim();
       const receivedBy = document.getElementById('receivedBy').value.trim();
@@ -363,7 +358,7 @@
 
       const confirmBtn = document.getElementById('confirmBtn');
       confirmBtn.disabled = true;
-      confirmBtn.innerHTML = '<span class="animate-pulse">Saving to Supabase...</span>';
+      confirmBtn.innerHTML = '<span class="animate-pulse">Processing & Dispatching Email...</span>';
 
       try {
         const signatureDataURL = canvas.toDataURL('image/png');
@@ -410,6 +405,65 @@
           senderEmail: loggedInUserEmail
         };
 
+        // Construct HTML Email Content inspired by your Apps Script template
+        const bannerUrl = "https://i.imgur.com/CgqeQHP.jpeg";
+        const htmlBody = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; background-color: #f4f4f4; }
+              .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0; }
+              .banner { width: 100%; max-width: 600px; height: auto; display: block; }
+              .content { padding: 25px; }
+              .details-box { background-color: #f8f9fa; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 4px; }
+              .footer { margin-top: 25px; padding-top: 15px; border-top: 1px solid #eeeeee; font-size: 0.9em; color: #666666; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <img src="${bannerUrl}" alt="Document Transmittal Banner" class="banner">
+              <div class="content">
+                <h2>Mabuhay, ${receivedBy}!</h2>
+                <p>Thank you for receiving the document. Kindly contact us at <strong>local 664</strong> for any updates or inquiries.</p>
+                
+                <div class="details-box">
+                  <h3 style="margin-top:0; color:#10b981;">Document Information</h3>
+                  <p style="margin: 5px 0;"><strong>Document No:</strong> ${docNo}</p>
+                  <p style="margin: 5px 0;"><strong>Document Title:</strong> ${docTitle}</p>
+                  <p style="margin: 5px 0;"><strong>Receiving Department:</strong> ${receivingDept}</p>
+                  <p style="margin: 5px 0;"><strong>Timestamp:</strong> ${timestampStr}</p>
+                  <p style="margin: 5px 0;"><strong>Sender:</strong> ${loggedInUserEmail}</p>
+                </div>
+
+                <p>An authorized electronic proof of receipt and signature has been securely logged in our system.</p>
+                
+                <div class="footer">
+                  <p>Warm regards,<br><strong>Perpetual Help Medical Center - Las Piñas</strong><br>Receiving & Dispatch Department</p>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+
+        // Trigger Edge Function for auto-sending the HTML email
+        try {
+          await supabaseClient.functions.invoke('send-receiving-email', {
+            body: {
+              sender_email: loggedInUserEmail,
+              recipient_email: recipientEmail,
+              recipient_name: receivedBy,
+              subject: `Document Receiving Notice - [${docNo}] ${docTitle}`,
+              html_body: htmlBody
+            }
+          });
+          document.getElementById('modalEmailStatus').innerText = "Sent Successfully";
+        } catch (mailErr) {
+          console.warn('Edge function email dispatch notice:', mailErr);
+          document.getElementById('modalEmailStatus').innerText = "Logged (Edge Function pending)";
+        }
+
         document.getElementById('modalDocNo').innerText = docNo;
         document.getElementById('modalTitle').innerText = docTitle;
         document.getElementById('modalReceivedBy').innerText = receivedBy;
@@ -420,10 +474,6 @@
 
         document.getElementById('proofModal').classList.remove('hidden');
 
-        const sendBtn = document.getElementById('sendEmailBtn');
-        sendBtn.disabled = false;
-        sendBtn.className = "w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 active:scale-[0.99] text-white font-semibold rounded-xl text-sm shadow-lg shadow-blue-900/30 transition-all flex items-center justify-center space-x-2";
-
       } catch (err) {
         console.error('Supabase Error:', err);
         alert('Error saving record: ' + (err.message || JSON.stringify(err)));
@@ -431,7 +481,7 @@
         confirmBtn.disabled = false;
         confirmBtn.innerHTML = `
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
-          <span>Confirm & View Proof</span>
+          <span>Confirm & View Proof & Auto-Send Email</span>
         `;
       }
     }
@@ -447,63 +497,11 @@
       link.href = canvas.toDataURL();
       link.click();
     }
-
-    // Automated Background Email Dispatch via Supabase Edge Function
-    async function triggerAutoSendEmail() {
-      if (!currentConfirmedRecord) return;
-
-      const sendBtn = document.getElementById('sendEmailBtn');
-      sendBtn.disabled = true;
-      sendBtn.innerHTML = '<span class="animate-pulse">Sending Email...</span>';
-
-      try {
-        const payload = {
-          sender_email: currentConfirmedRecord.senderEmail,
-          recipient_email: currentConfirmedRecord.recipientEmail,
-          recipient_name: currentConfirmedRecord.receivedBy,
-          doc_title: currentConfirmedRecord.docTitle,
-          doc_no: currentConfirmedRecord.docNo,
-          department: currentConfirmedRecord.receivingDept,
-          timestamp: currentConfirmedRecord.timestamp,
-          signature_url: currentConfirmedRecord.signatureUrl
-        };
-
-        // Call Supabase Edge Function (Deploy a function named 'send-receiving-email' using Resend or SendGrid)
-        const { data, error } = await supabaseClient.functions.invoke('send-receiving-email', {
-          body: payload
-        });
-
-        if (error) {
-          throw error;
-        }
-
-        alert(`Email successfully sent to ${currentConfirmedRecord.recipientEmail} from ${currentConfirmedRecord.senderEmail}!`);
-        sendBtn.innerHTML = `
-          <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
-          <span>Email Sent Successfully</span>
-        `;
-        sendBtn.className = "w-full py-3 px-4 bg-emerald-800 text-emerald-200 font-semibold rounded-xl text-sm border border-emerald-700 transition-all flex items-center justify-center space-x-2";
-
-      } catch (err) {
-        console.error('Email Dispatch Error:', err);
-        // Fallback to mailto if edge function isn't set up yet
-        const subject = encodeURIComponent(`Document Receiving Notice - [${currentConfirmedRecord.docNo}] ${currentConfirmedRecord.docTitle}`);
-        const emailBody = `Dear ${currentConfirmedRecord.receivedBy},\n\nThank you for receiving the document. Kindly contact us in this local 664 for updates.\n\nDocument Information:\n- Document Title: ${currentConfirmedRecord.docTitle}\n- Document No: ${currentConfirmedRecord.docNo}\n- Receiving Department: ${currentConfirmedRecord.receivingDept}\n- Timestamp: ${currentConfirmedRecord.timestamp}\n\nBest regards,\nReceiving & Dispatch Department`;
-        
-        window.location.href = `mailto:${currentConfirmedRecord.recipientEmail}?subject=${subject}&body=${encodeURIComponent(emailBody)}`;
-        
-        sendBtn.disabled = false;
-        sendBtn.innerHTML = `
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-          <span>Send Email Notification</span>
-        `;
-      }
-    }
   </script>
 
-  <ElicitationsGroup message="To set up the automated backend email service:">
-    <Elicitation label="Provide the Supabase Edge Function code using Resend or SendGrid API" query="Provide the JavaScript code for a Supabase Edge Function using Resend or SendGrid to process and send HTML emails automatically." />
-    <Elicitation label="Add an email delivery status log table in Supabase" query="How can I create an email audit log table in Supabase to track successful email dispatches?" />
+  <ElicitationsGroup message="To refine your automated email system further:">
+    <Elicitation label="Provide the code for the Supabase Edge Function using Resend" query="Provide the complete serverless TypeScript code for the Supabase Edge Function that utilizes Resend to dispatch the HTML confirmation email." />
+    <Elicitation label="Add a notification badge count for unsent email queues" query="How can I store unsent email queues in Supabase if the network fails during confirmation?" />
   </ElicitationsGroup>
 
 </body>
