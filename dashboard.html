@@ -8,7 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Supabase JS Client CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Highcharts CDN for Analytics -->
+  <!-- Highcharts CDN -->
   <script src="https://code.highcharts.com/highcharts.js"></script>
   <style>
     body {
@@ -32,7 +32,7 @@
       <div class="w-3.5 h-3.5 bg-emerald-500 rounded-full animate-pulse"></div>
       <div>
         <h1 class="text-xl font-bold tracking-tight text-slate-100">Document Tracking & Audit Dashboard</h1>
-        <p class="text-xs text-slate-400">Real-time department routing and receiving proof logs</p>
+        <p class="text-xs text-slate-400">Collapsible department routing and history gateway</p>
       </div>
     </div>
     <div class="flex items-center space-x-3">
@@ -53,12 +53,12 @@
     <!-- Metrics Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="glass-card rounded-2xl p-4 shadow-xl border border-slate-700/60">
-        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Proof Logs</span>
-        <div id="statTotalLogs" class="text-2xl font-bold text-slate-100 mt-1">--</div>
-      </div>
-      <div class="glass-card rounded-2xl p-4 shadow-xl border border-slate-700/60">
         <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Unique Documents</span>
         <div id="statUniqueDocs" class="text-2xl font-bold text-emerald-400 mt-1">--</div>
+      </div>
+      <div class="glass-card rounded-2xl p-4 shadow-xl border border-slate-700/60">
+        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Department Stops</span>
+        <div id="statTotalLogs" class="text-2xl font-bold text-slate-100 mt-1">--</div>
       </div>
       <div class="glass-card rounded-2xl p-4 shadow-xl border border-slate-700/60">
         <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Active Departments</span>
@@ -77,43 +77,43 @@
         <div id="deptChartContainer" class="w-full h-64"></div>
       </div>
       <div class="glass-card rounded-2xl p-5 shadow-xl border border-slate-700/60 flex flex-col justify-between">
-        <h3 class="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-3">Quick Filter by Status / Dept</h3>
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-3">Quick Filter Audit Logs</h3>
         <div class="space-y-3">
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">Search Table Logs</label>
-            <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Filter by title, receiver, or dept..." 
+            <label class="block text-xs font-medium text-slate-400 mb-1">Search Documents</label>
+            <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Filter by Doc No, Title, Dept, Receiver..." 
               class="w-full px-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500">
           </div>
           <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
-            <div class="font-semibold text-slate-300">Audit Trail Note:</div>
-            <div>Multiple rows sharing the same Document No represent multi-department transfer history.</div>
+            <div class="font-semibold text-slate-300">Collapsible Feature:</div>
+            <div>Click any document row to expand or collapse its full multi-department routing history.</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Document History Logs Table -->
+    <!-- Collapsible Document History Table -->
     <div class="glass-card rounded-2xl shadow-xl overflow-hidden border border-slate-700/60">
       <div class="p-4 border-b border-slate-700/60 flex items-center justify-between">
-        <h3 class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Complete Document Audit Trail & History</h3>
-        <span id="recordCountBadge" class="text-[10px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-mono">0 records</span>
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Document Audit Trail & History</h3>
+        <span id="recordCountBadge" class="text-[10px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-mono">0 documents</span>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-xs">
           <thead>
             <tr class="bg-slate-900/80 text-slate-400 font-semibold border-b border-slate-800">
+              <th class="p-3.5 w-10 text-center">Trail</th>
               <th class="p-3.5">Doc No</th>
               <th class="p-3.5">Document Title</th>
-              <th class="p-3.5">Receiving Dept</th>
-              <th class="p-3.5">Received By</th>
-              <th class="p-3.5">Recipient Email</th>
-              <th class="p-3.5">Signature Proof</th>
-              <th class="p-3.5">Timestamp</th>
+              <th class="p-3.5">Current Location (Dept)</th>
+              <th class="p-3.5">Last Received By</th>
+              <th class="p-3.5">Total Transfer Stops</th>
+              <th class="p-3.5">Latest Update</th>
             </tr>
           </thead>
           <tbody id="logsTableBody" class="divide-y divide-slate-800/60 text-slate-300">
             <tr>
-              <td colspan="7" class="p-6 text-center text-slate-500 animate-pulse">Loading document audit logs from Supabase...</td>
+              <td colspan="7" class="p-6 text-center text-slate-500 animate-pulse">Loading grouped document logs...</td>
             </tr>
           </tbody>
         </table>
@@ -124,17 +124,17 @@
 
   <!-- Footer -->
   <footer class="max-w-7xl mx-auto w-full text-center text-[10px] text-slate-500 py-4 border-t border-slate-800/60">
-    Perpetual Help Medical Center - Las Piñas &bull; Document Tracking Dashboard &bull; Powered by Supabase
+    Perpetual Help Medical Center - Las Piñas &bull; Collapsible Document Audit Trail &bull; Powered by Supabase
   </footer>
 
-  <!-- Dashboard Script Logic -->
+  <!-- Logic Script -->
   <script>
-    // Supabase Configuration
     const SUPABASE_URL = "https://dideaglufjrautyomrzm.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_-b5NQcuBhQk57Y-tXzDe_A_HR3Im8CH";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    let allDocumentLogs = [];
+    let rawDocumentLogs = [];
+    let groupedDocumentMap = {};
 
     window.addEventListener('DOMContentLoaded', () => {
       fetchDocumentLogs();
@@ -149,10 +149,12 @@
 
         if (error) throw error;
 
-        allDocumentLogs = data || [];
-        renderDashboardMetrics(allDocumentLogs);
-        renderTable(allDocumentLogs);
-        renderDepartmentChart(allDocumentLogs);
+        rawDocumentLogs = data || [];
+        groupedDocumentMap = groupLogsByDocNo(rawDocumentLogs);
+
+        renderDashboardMetrics(rawDocumentLogs, groupedDocumentMap);
+        renderCollapsibleTable(groupedDocumentMap);
+        renderDepartmentChart(rawDocumentLogs);
 
       } catch (err) {
         console.error('Error fetching logs:', err);
@@ -162,62 +164,170 @@
       }
     }
 
-    function renderDashboardMetrics(logs) {
-      const totalLogs = logs.length;
-      const uniqueDocs = new Set(logs.map(l => l.doc_no)).size;
-      const uniqueDepts = new Set(logs.map(l => l.receiving_dept)).size;
-      const latestTime = logs.length > 0 ? new Date(logs[0].created_at).toLocaleString() : 'N/A';
+    // Group logs by doc_no
+    function groupLogsByDocNo(logs) {
+      const groups = {};
+      logs.forEach(item => {
+        const docNo = item.doc_no || 'UNKNOWN';
+        if (!groups[docNo]) {
+          groups[docNo] = [];
+        }
+        groups[docNo].push(item);
+      });
 
-      document.getElementById('statTotalLogs').innerText = totalLogs;
-      document.getElementById('statUniqueDocs').innerText = uniqueDocs;
-      document.getElementById('statDepartments').innerText = uniqueDepts;
-      document.getElementById('statLatestTime').innerText = latestTime;
-      document.getElementById('recordCountBadge').innerText = `${totalLogs} records`;
+      // Sort each group's logs in descending order (latest first)
+      Object.keys(groups).forEach(key => {
+        groups[key].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      });
+
+      return groups;
     }
 
-    function renderTable(logs) {
+    function renderDashboardMetrics(rawLogs, groupedMap) {
+      const totalLogs = rawLogs.length;
+      const uniqueDocsCount = Object.keys(groupedMap).length;
+      const uniqueDepts = new Set(rawLogs.map(l => l.receiving_dept)).size;
+      const latestTime = rawLogs.length > 0 ? new Date(rawLogs[0].created_at).toLocaleString() : 'N/A';
+
+      document.getElementById('statTotalLogs').innerText = totalLogs;
+      document.getElementById('statUniqueDocs').innerText = uniqueDocsCount;
+      document.getElementById('statDepartments').innerText = uniqueDepts;
+      document.getElementById('statLatestTime').innerText = latestTime;
+      document.getElementById('recordCountBadge').innerText = `${uniqueDocsCount} unique documents`;
+    }
+
+    function renderCollapsibleTable(groupedMap) {
       const tbody = document.getElementById('logsTableBody');
-      if (logs.length === 0) {
+      const docNumbers = Object.keys(groupedMap);
+
+      if (docNumbers.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">No document records found in database.</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = logs.map(doc => {
-        const formattedDate = doc.created_at ? new Date(doc.created_at).toLocaleString() : '--';
-        return `
-          <tr class="hover:bg-slate-800/40 transition-colors">
-            <td class="p-3.5 font-mono font-bold text-emerald-400">${doc.doc_no || '--'}</td>
-            <td class="p-3.5 font-medium text-slate-100">${doc.doc_title || '--'}</td>
+      let html = '';
+
+      docNumbers.forEach((docNo, index) => {
+        const historyList = groupedMap[docNo];
+        const latestDoc = historyList[0]; // Latest entry
+        const stopCount = historyList.length;
+        const rowId = `row_${index}`;
+        const subTableId = `sub_${index}`;
+
+        const latestDate = latestDoc.created_at ? new Date(latestDoc.created_at).toLocaleString() : '--';
+
+        html += `
+          <!-- Main Collapsible Row -->
+          <tr id="${rowId}" onclick="toggleHistory('${subTableId}', '${rowId}')" class="cursor-pointer hover:bg-slate-800/60 transition-colors">
+            <td class="p-3.5 text-center text-slate-400 font-bold select-none">
+              <span id="chevron_${subTableId}" class="inline-block transition-transform duration-200 text-emerald-400">+</span>
+            </td>
+            <td class="p-3.5 font-mono font-bold text-emerald-400">${docNo}</td>
+            <td class="p-3.5 font-medium text-slate-100">${latestDoc.doc_title || '--'}</td>
             <td class="p-3.5">
               <span class="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-medium">
-                ${doc.receiving_dept || '--'}
+                ${latestDoc.receiving_dept || '--'}
               </span>
             </td>
-            <td class="p-3.5 text-slate-200">${doc.received_by || '--'}</td>
-            <td class="p-3.5 text-slate-400 font-mono text-[11px]">${doc.recipient_email || '--'}</td>
+            <td class="p-3.5 text-slate-200">${latestDoc.received_by || '--'}</td>
             <td class="p-3.5">
-              ${doc.signature_url ? `
-                <a href="${doc.signature_url}" target="_blank" class="block w-16 h-8 bg-slate-900 border border-slate-700 rounded p-1 hover:border-emerald-500 transition-colors" title="View Full Signature">
-                  <img src="${doc.signature_url}" alt="Sig" class="w-full h-full object-contain filter invert opacity-90">
-                </a>
-              ` : '<span class="text-slate-500">No image</span>'}
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${stopCount > 1 ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-700/60' : 'bg-slate-800 text-slate-400'}">
+                ${stopCount} ${stopCount === 1 ? 'Stop' : 'Transfers'}
+              </span>
             </td>
-            <td class="p-3.5 font-mono text-[11px] text-slate-400">${formattedDate}</td>
+            <td class="p-3.5 font-mono text-[11px] text-slate-400">${latestDate}</td>
+          </tr>
+
+          <!-- Hidden Nested History Trail Row -->
+          <tr id="${subTableId}" class="hidden bg-slate-950/80">
+            <td colspan="7" class="p-4 border-l-4 border-emerald-500">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between text-[11px] text-emerald-400 font-semibold uppercase tracking-wider">
+                  <span>Routing History Trail (${docNo})</span>
+                  <span>${stopCount} Record(s)</span>
+                </div>
+                <table class="w-full text-left text-[11px] border border-slate-800 rounded-xl overflow-hidden bg-slate-900/90">
+                  <thead>
+                    <tr class="bg-slate-900 text-slate-400 border-b border-slate-800">
+                      <th class="p-2">Step</th>
+                      <th class="p-2">Department</th>
+                      <th class="p-2">Received By</th>
+                      <th class="p-2">Recipient Email</th>
+                      <th class="p-2">Signature Proof</th>
+                      <th class="p-2">Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-800/80 text-slate-300">
+                    ${historyList.map((item, hIdx) => {
+                      const itemDate = item.created_at ? new Date(item.created_at).toLocaleString() : '--';
+                      const stepNum = stopCount - hIdx;
+                      return `
+                        <tr class="hover:bg-slate-800/40">
+                          <td class="p-2 font-mono text-slate-400">#${stepNum}</td>
+                          <td class="p-2 font-semibold text-slate-200">${item.receiving_dept || '--'}</td>
+                          <td class="p-2">${item.received_by || '--'}</td>
+                          <td class="p-2 font-mono text-slate-400">${item.recipient_email || '--'}</td>
+                          <td class="p-2">
+                            ${item.signature_url ? `
+                              <a href="${item.signature_url}" target="_blank" class="block w-14 h-7 bg-slate-950 border border-slate-700 rounded p-1 hover:border-emerald-500 transition-colors" title="View Signature">
+                                <img src="${item.signature_url}" alt="Sig" class="w-full h-full object-contain filter invert opacity-90">
+                              </a>
+                            ` : '<span class="text-slate-500">No image</span>'}
+                          </td>
+                          <td class="p-2 font-mono text-slate-400">${itemDate}</td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </td>
           </tr>
         `;
-      }).join('');
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    function toggleHistory(subTableId, rowId) {
+      const subRow = document.getElementById(subTableId);
+      const chevron = document.getElementById(`chevron_${subTableId}`);
+
+      if (subRow.classList.contains('hidden')) {
+        subRow.classList.remove('hidden');
+        if (chevron) chevron.innerText = '▼';
+      } else {
+        subRow.classList.add('hidden');
+        if (chevron) chevron.innerText = '+';
+      }
     }
 
     function filterTable() {
-      const query = document.getElementById('tableSearch').value.toLowerCase();
-      const filtered = allDocumentLogs.filter(doc => 
-        (doc.doc_no && doc.doc_no.toLowerCase().includes(query)) ||
-        (doc.doc_title && doc.doc_title.toLowerCase().includes(query)) ||
-        (doc.received_by && doc.received_by.toLowerCase().includes(query)) ||
-        (doc.receiving_dept && doc.receiving_dept.toLowerCase().includes(query)) ||
-        (doc.recipient_email && doc.recipient_email.toLowerCase().includes(query))
-      );
-      renderTable(filtered);
+      const query = document.getElementById('tableSearch').value.toLowerCase().trim();
+      
+      if (!query) {
+        renderCollapsibleTable(groupedDocumentMap);
+        return;
+      }
+
+      const filteredGroupMap = {};
+
+      Object.keys(groupedDocumentMap).forEach(docNo => {
+        const logs = groupedDocumentMap[docNo];
+        const matches = logs.some(item => 
+          (item.doc_no && item.doc_no.toLowerCase().includes(query)) ||
+          (item.doc_title && item.doc_title.toLowerCase().includes(query)) ||
+          (item.received_by && item.received_by.toLowerCase().includes(query)) ||
+          (item.receiving_dept && item.receiving_dept.toLowerCase().includes(query)) ||
+          (item.recipient_email && item.recipient_email.toLowerCase().includes(query))
+        );
+
+        if (matches) {
+          filteredGroupMap[docNo] = logs;
+        }
+      });
+
+      renderCollapsibleTable(filteredGroupMap);
     }
 
     function renderDepartmentChart(logs) {
