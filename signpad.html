@@ -42,6 +42,19 @@
   <!-- Main Container -->
   <main class="w-full max-w-md mx-auto space-y-4 mb-8">
     
+    <!-- Lookup Existing Document Card -->
+    <div class="glass-card rounded-2xl p-4 shadow-xl space-y-2.5">
+      <h2 class="text-xs font-semibold tracking-wider text-emerald-400 uppercase">Lookup Existing Document</h2>
+      <div class="flex space-x-2">
+        <input type="text" id="searchQuery" placeholder="Enter Doc No (e.g. 5) or Title..." 
+          class="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors">
+        <button onclick="lookupDocument()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 text-xs font-semibold rounded-xl transition-all border border-slate-700">
+          Search
+        </button>
+      </div>
+      <div id="lookupResult" class="hidden text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800"></div>
+    </div>
+
     <!-- Document Info Card -->
     <div class="glass-card rounded-2xl p-4 shadow-xl space-y-3">
       <h2 class="text-xs font-semibold tracking-wider text-emerald-400 uppercase">Document Info</h2>
@@ -199,6 +212,52 @@
         console.warn('Session check warning:', err);
       }
     });
+
+    // Lookup Document function by doc_no or doc_title
+    async function lookupDocument() {
+      const query = document.getElementById('searchQuery').value.trim();
+      const resultDiv = document.getElementById('lookupResult');
+      if (!query) {
+        alert('Please enter a Document No or Title to search.');
+        return;
+      }
+
+      resultDiv.classList.remove('hidden');
+      resultDiv.innerHTML = '<span class="animate-pulse text-slate-400">Searching database...</span>';
+
+      try {
+        let supabaseQuery = supabaseClient.from('document_proofs').select('*');
+        
+        if (!isNaN(query)) {
+          supabaseQuery = supabaseQuery.eq('doc_no', parseInt(query));
+        } else {
+          supabaseQuery = supabaseQuery.ilike('doc_title', `%${query}%`);
+        }
+
+        const { data, error } = await supabaseQuery.limit(1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const doc = data[0];
+          document.getElementById('docTitle').value = doc.doc_title;
+          document.getElementById('receivedBy').value = doc.received_by;
+          document.getElementById('receivingDept').value = doc.receiving_dept;
+          document.getElementById('recipientEmail').value = doc.recipient_email;
+
+          resultDiv.innerHTML = `
+            <div class="text-emerald-400 font-semibold mb-1">Found: Doc #${doc.doc_no}</div>
+            <div class="text-slate-300">${doc.doc_title} (${doc.receiving_dept})</div>
+            <div class="text-[10px] text-slate-500 mt-1">Form fields have been auto-filled below.</div>
+          `;
+        } else {
+          resultDiv.innerHTML = '<span class="text-amber-400">No matching document found.</span>';
+        }
+      } catch (err) {
+        console.error('Lookup error:', err);
+        resultDiv.innerHTML = '<span class="text-red-400">Error searching document records.</span>';
+      }
+    }
 
     // Smart Dropdown Initialization for Departments
     const defaultDepartments = ["Administrative", "Finance", "Human Resources", "Information Technology", "Logistics", "Operations", "Quality Assurance"];
@@ -406,7 +465,7 @@
         };
 
         // Send payload to Make.com Webhook URL
-        const makeWebhookUrl = "https://hook.eu1.make.com/rd52qv7psb7s3pl5mh3itf85d2o658fm";
+        const makeWebhookUrl = "https://hook.eu1.make.com/m4c1b8mf6n8py2fvt04c7hxa9n48lwx7";
         
         await fetch(makeWebhookUrl, {
           method: "POST",
