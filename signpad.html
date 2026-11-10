@@ -42,6 +42,19 @@
   <!-- Main Container -->
   <main class="w-full max-w-md mx-auto space-y-4 mb-8">
     
+    <!-- Lookup Existing Document Card -->
+    <div class="glass-card rounded-2xl p-4 shadow-xl space-y-2.5">
+      <h2 class="text-xs font-semibold tracking-wider text-emerald-400 uppercase">Lookup Existing Document</h2>
+      <div class="flex space-x-2">
+        <input type="text" id="searchQuery" placeholder="Enter Doc No (e.g. DOC-00001) or Title..." 
+          class="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors">
+        <button onclick="lookupDocument()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 text-xs font-semibold rounded-xl transition-all border border-slate-700">
+          Search
+        </button>
+      </div>
+      <div id="lookupResult" class="hidden text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800"></div>
+    </div>
+
     <!-- Document Info Card -->
     <div class="glass-card rounded-2xl p-4 shadow-xl space-y-3">
       <h2 class="text-xs font-semibold tracking-wider text-emerald-400 uppercase">Document Info</h2>
@@ -183,6 +196,7 @@
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let loggedInUserEmail = "system@company.com";
+    let currentActiveDocNo = null;
 
     // Fetch authenticated user session on load
     window.addEventListener('DOMContentLoaded', async () => {
@@ -199,6 +213,56 @@
         console.warn('Session check warning:', err);
       }
     });
+
+    // Lookup Document function by doc_no or doc_title
+    async function lookupDocument() {
+      const query = document.getElementById('searchQuery').value.trim();
+      const resultDiv = document.getElementById('lookupResult');
+      if (!query) {
+        alert('Please enter a Document No or Title to search.');
+        return;
+      }
+
+      resultDiv.classList.remove('hidden');
+      resultDiv.innerHTML = '<span class="animate-pulse text-slate-400">Searching database...</span>';
+
+      try {
+        let supabaseQuery = supabaseClient.from('document_proofs').select('*');
+        
+        if (query.toUpperCase().startsWith('DOC-') || !isNaN(query)) {
+          const searchFormatted = query.toUpperCase().startsWith('DOC-') ? query.toUpperCase() : `DOC-${query.padStart(5, '0')}`;
+          supabaseQuery = supabaseQuery.or(`doc_no.eq.${searchFormatted},doc_no.eq.${query}`);
+        } else {
+          supabaseQuery = supabaseQuery.ilike('doc_title', `%${query}%`);
+        }
+
+        const { data, error } = await supabaseQuery.order('created_at', { ascending: false }).limit(1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const doc = data[0];
+          currentActiveDocNo = doc.doc_no;
+
+          document.getElementById('docTitle').value = doc.doc_title;
+          document.getElementById('receivedBy').value = '';
+          document.getElementById('receivingDept').value = '';
+          document.getElementById('recipientEmail').value = doc.recipient_email || '';
+
+          resultDiv.innerHTML = `
+            <div class="text-emerald-400 font-semibold mb-1">Found Active Document: ${doc.doc_no}</div>
+            <div class="text-slate-300">${doc.doc_title} (Last at: ${doc.receiving_dept})</div>
+            <div class="text-[10px] text-slate-400 mt-1">Ready to transfer to next department.</div>
+          `;
+        } else {
+          currentActiveDocNo = null;
+          resultDiv.innerHTML = '<span class="text-amber-400">No matching document found. Standard new receipt mode.</span>';
+        }
+      } catch (err) {
+        console.error('Lookup error:', err);
+        resultDiv.innerHTML = '<span class="text-red-400">Error searching document records.</span>';
+      }
+    }
 
     // Smart Dropdown Initialization for Departments
     const defaultDepartments = ["Administrative", "Finance", "Human Resources", "Information Technology", "Logistics", "Operations", "Quality Assurance"];
@@ -337,7 +401,7 @@
       return new Blob([u8arr], { type: mime });
     }
 
-    // Confirm & View Proof + Make.com Webhook Auto-Trigger Workflow
+    // Confirm & View Proof + Webhook Workflow
     async function confirmAndViewProof() {
       const docTitle = document.getElementById('docTitle').value.trim();
       const receivedBy = document.getElementById('receivedBy').value.trim();
@@ -378,15 +442,21 @@
         const signatureUrl = publicUrlData.publicUrl;
         const timestampStr = new Date().toLocaleString();
 
+        const payload = {
+          doc_title: docTitle,
+          received_by: receivedBy,
+          receiving_dept: receivingDept,
+          recipient_email: recipientEmail,
+          signature_url: signatureUrl
+        };
+
+        if (currentActiveDocNo) {
+          payload.doc_no = currentActiveDocNo;
+        }
+
         const { data: insertData, error: insertError } = await supabaseClient
           .from('document_proofs')
-          .insert([{
-            doc_title: docTitle,
-            received_by: receivedBy,
-            receiving_dept: receivingDept,
-            recipient_email: recipientEmail,
-            signature_url: signatureUrl
-          }])
+          .insert([payload])
           .select('doc_no, created_at')
           .single();
 
@@ -405,7 +475,7 @@
           senderEmail: loggedInUserEmail
         };
 
-        // Send payload to Make.com Webhook URL
+        // Send payload to your active working Make.com Webhook URL
         const makeWebhookUrl = "https://hook.eu1.make.com/rd52qv7psb7s3pl5mh3itf85d2o658fm";
         
         await fetch(makeWebhookUrl, {
@@ -433,6 +503,8 @@
         document.getElementById('modalSigImage').src = signatureDataURL;
 
         document.getElementById('proofModal').classList.remove('hidden');
+
+        currentActiveDocNo = null;
 
       } catch (err) {
         console.error('Submission Error:', err);
