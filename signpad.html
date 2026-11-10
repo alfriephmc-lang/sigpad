@@ -196,7 +196,7 @@
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let loggedInUserEmail = "system@company.com";
-    let currentActiveDocNo = null; // Tracks existing doc number for department transfers
+    let currentActiveDocNo = null;
 
     // Fetch authenticated user session on load
     window.addEventListener('DOMContentLoaded', async () => {
@@ -245,8 +245,8 @@
           currentActiveDocNo = doc.doc_no;
 
           document.getElementById('docTitle').value = doc.doc_title;
-          document.getElementById('receivedBy').value = ''; // Cleared for next receiver
-          document.getElementById('receivingDept').value = ''; // Cleared for next department
+          document.getElementById('receivedBy').value = '';
+          document.getElementById('receivingDept').value = '';
           document.getElementById('recipientEmail').value = doc.recipient_email || '';
 
           resultDiv.innerHTML = `
@@ -401,7 +401,7 @@
       return new Blob([u8arr], { type: mime });
     }
 
-    // Confirm & View Proof + Make.com Webhook Auto-Trigger Workflow
+    // Confirm & View Proof + Safe Make.com Webhook Auto-Trigger Workflow
     async function confirmAndViewProof() {
       const docTitle = document.getElementById('docTitle').value.trim();
       const receivedBy = document.getElementById('receivedBy').value.trim();
@@ -478,30 +478,37 @@
           senderEmail: loggedInUserEmail
         };
 
-        // Send payload to Make.com Webhook URL
+        // Safely send payload to Make.com Webhook URL without blocking confirmation if it fails
         const makeWebhookUrl = "https://hook.eu1.make.com/m4c1b8mf6n8py2fvt04c7hxa9n48lwx7";
         
-        await fetch(makeWebhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sender_email: loggedInUserEmail,
-            recipient_email: recipientEmail,
-            recipient_name: receivedBy,
-            doc_no: docNo,
-            doc_title: docTitle,
-            department: receivingDept,
-            timestamp: timestampStr,
-            signature_url: signatureUrl
-          })
-        });
+        try {
+          await fetch(makeWebhookUrl, {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({
+              sender_email: loggedInUserEmail,
+              recipient_email: recipientEmail,
+              recipient_name: receivedBy,
+              doc_no: docNo,
+              doc_title: docTitle,
+              department: receivingDept,
+              timestamp: timestampStr,
+              signature_url: signatureUrl
+            })
+          });
+        } catch (webhookErr) {
+          console.warn("Make.com Webhook dispatch warning:", webhookErr);
+        }
 
         document.getElementById('modalDocNo').innerText = docNo;
         document.getElementById('modalTitle').innerText = docTitle;
         document.getElementById('modalReceivedBy').innerText = receivedBy;
         document.getElementById('modalDept').innerText = receivingDept;
         document.getElementById('modalEmail').innerText = recipientEmail;
-        document.getElementById('modalEmailStatus').innerText = "Sent via Make.com";
+        document.getElementById('modalEmailStatus').innerText = "Dispatched via Make.com";
         document.getElementById('modalTime').innerText = timestampStr;
         document.getElementById('modalSigImage').src = signatureDataURL;
 
