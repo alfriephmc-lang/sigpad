@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document Tracking & History Dashboard</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Highcharts CDN for Analytics -->
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+  <style>
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-4 sm:p-8">
+
+  <!-- Header -->
+  <header class="max-w-7xl mx-auto w-full mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex items-center space-x-3">
+      <div class="w-3.5 h-3.5 bg-emerald-500 rounded-full animate-pulse"></div>
+      <div>
+        <h1 class="text-xl font-bold tracking-tight text-slate-100">Document Tracking & Audit Dashboard</h1>
+        <p class="text-xs text-slate-400">Real-time department routing and receiving proof logs</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-3">
+      <a href="signpad.html" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition-all border border-slate-700 flex items-center space-x-2">
+        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        <span>Open Receiving Pad</span>
+      </a>
+      <button onclick="fetchDocumentLogs()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition-all flex items-center space-x-2 shadow-lg shadow-emerald-900/30">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        <span>Refresh Logs</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto w-full space-y-6 mb-12">
+
+    <!-- Metrics Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="glass-card rounded-2xl p-4 shadow-xl border border-slate-700/60">
+        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Proof Logs</span>
+        <div id="statTotalLogs" class="text-2xl font-bold text-slate-100 mt-1">--</div>
+      </div>
+      <div class="glass-card rounded-2xl p-4 shadow-xl border border-slate-700/60">
+        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Unique Documents</span>
+        <div id="statUniqueDocs" class="text-2xl font-bold text-emerald-400 mt-1">--</div>
+      </div>
+      <div class="glass-card rounded-2xl p-4 shadow-xl border border-slate-700/60">
+        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Active Departments</span>
+        <div id="statDepartments" class="text-2xl font-bold text-blue-400 mt-1">--</div>
+      </div>
+      <div class="glass-card rounded-2xl p-4 shadow-xl border border-slate-700/60">
+        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Latest Activity</span>
+        <div id="statLatestTime" class="text-xs font-mono font-semibold text-slate-300 mt-2 truncate">--</div>
+      </div>
+    </div>
+
+    <!-- Charts & Analytics Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="glass-card rounded-2xl p-5 shadow-xl lg:col-span-2 border border-slate-700/60 flex flex-col justify-between">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-3">Department Routing Distribution</h3>
+        <div id="deptChartContainer" class="w-full h-64"></div>
+      </div>
+      <div class="glass-card rounded-2xl p-5 shadow-xl border border-slate-700/60 flex flex-col justify-between">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-3">Quick Filter by Status / Dept</h3>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Search Table Logs</label>
+            <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Filter by title, receiver, or dept..." 
+              class="w-full px-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+          </div>
+          <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
+            <div class="font-semibold text-slate-300">Audit Trail Note:</div>
+            <div>Multiple rows sharing the same Document No represent multi-department transfer history.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Document History Logs Table -->
+    <div class="glass-card rounded-2xl shadow-xl overflow-hidden border border-slate-700/60">
+      <div class="p-4 border-b border-slate-700/60 flex items-center justify-between">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Complete Document Audit Trail & History</h3>
+        <span id="recordCountBadge" class="text-[10px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-mono">0 records</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="bg-slate-900/80 text-slate-400 font-semibold border-b border-slate-800">
+              <th class="p-3.5">Doc No</th>
+              <th class="p-3.5">Document Title</th>
+              <th class="p-3.5">Receiving Dept</th>
+              <th class="p-3.5">Received By</th>
+              <th class="p-3.5">Recipient Email</th>
+              <th class="p-3.5">Signature Proof</th>
+              <th class="p-3.5">Timestamp</th>
+            </tr>
+          </thead>
+          <tbody id="logsTableBody" class="divide-y divide-slate-800/60 text-slate-300">
+            <tr>
+              <td colspan="7" class="p-6 text-center text-slate-500 animate-pulse">Loading document audit logs from Supabase...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="max-w-7xl mx-auto w-full text-center text-[10px] text-slate-500 py-4 border-t border-slate-800/60">
+    Perpetual Help Medical Center - Las Piñas &bull; Document Tracking Dashboard &bull; Powered by Supabase
+  </footer>
+
+  <!-- Dashboard Script Logic -->
+  <script>
+    // Supabase Configuration
+    const SUPABASE_URL = "https://dideaglufjrautyomrzm.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_-b5NQcuBhQk57Y-tXzDe_A_HR3Im8CH";
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let allDocumentLogs = [];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      fetchDocumentLogs();
+    });
+
+    async function fetchDocumentLogs() {
+      try {
+        const { data, error } = await supabaseClient
+          .from('document_proofs')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        allDocumentLogs = data || [];
+        renderDashboardMetrics(allDocumentLogs);
+        renderTable(allDocumentLogs);
+        renderDepartmentChart(allDocumentLogs);
+
+      } catch (err) {
+        console.error('Error fetching logs:', err);
+        document.getElementById('logsTableBody').innerHTML = `
+          <tr><td colspan="7" class="p-6 text-center text-red-400">Failed to load logs: ${err.message}</td></tr>
+        `;
+      }
+    }
+
+    function renderDashboardMetrics(logs) {
+      const totalLogs = logs.length;
+      const uniqueDocs = new Set(logs.map(l => l.doc_no)).size;
+      const uniqueDepts = new Set(logs.map(l => l.receiving_dept)).size;
+      const latestTime = logs.length > 0 ? new Date(logs[0].created_at).toLocaleString() : 'N/A';
+
+      document.getElementById('statTotalLogs').innerText = totalLogs;
+      document.getElementById('statUniqueDocs').innerText = uniqueDocs;
+      document.getElementById('statDepartments').innerText = uniqueDepts;
+      document.getElementById('statLatestTime').innerText = latestTime;
+      document.getElementById('recordCountBadge').innerText = `${totalLogs} records`;
+    }
+
+    function renderTable(logs) {
+      const tbody = document.getElementById('logsTableBody');
+      if (logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">No document records found in database.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = logs.map(doc => {
+        const formattedDate = doc.created_at ? new Date(doc.created_at).toLocaleString() : '--';
+        return `
+          <tr class="hover:bg-slate-800/40 transition-colors">
+            <td class="p-3.5 font-mono font-bold text-emerald-400">${doc.doc_no || '--'}</td>
+            <td class="p-3.5 font-medium text-slate-100">${doc.doc_title || '--'}</td>
+            <td class="p-3.5">
+              <span class="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-medium">
+                ${doc.receiving_dept || '--'}
+              </span>
+            </td>
+            <td class="p-3.5 text-slate-200">${doc.received_by || '--'}</td>
+            <td class="p-3.5 text-slate-400 font-mono text-[11px]">${doc.recipient_email || '--'}</td>
+            <td class="p-3.5">
+              ${doc.signature_url ? `
+                <a href="${doc.signature_url}" target="_blank" class="block w-16 h-8 bg-slate-900 border border-slate-700 rounded p-1 hover:border-emerald-500 transition-colors" title="View Full Signature">
+                  <img src="${doc.signature_url}" alt="Sig" class="w-full h-full object-contain filter invert opacity-90">
+                </a>
+              ` : '<span class="text-slate-500">No image</span>'}
+            </td>
+            <td class="p-3.5 font-mono text-[11px] text-slate-400">${formattedDate}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterTable() {
+      const query = document.getElementById('tableSearch').value.toLowerCase();
+      const filtered = allDocumentLogs.filter(doc => 
+        (doc.doc_no && doc.doc_no.toLowerCase().includes(query)) ||
+        (doc.doc_title && doc.doc_title.toLowerCase().includes(query)) ||
+        (doc.received_by && doc.received_by.toLowerCase().includes(query)) ||
+        (doc.receiving_dept && doc.receiving_dept.toLowerCase().includes(query)) ||
+        (doc.recipient_email && doc.recipient_email.toLowerCase().includes(query))
+      );
+      renderTable(filtered);
+    }
+
+    function renderDepartmentChart(logs) {
+      const deptCounts = {};
+      logs.forEach(doc => {
+        const dept = doc.receiving_dept || 'Unassigned';
+        deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+      });
+
+      const categories = Object.keys(deptCounts);
+      const data = Object.values(deptCounts);
+
+      Highcharts.chart('deptChartContainer', {
+        chart: {
+          type: 'column',
+          backgroundColor: 'transparent'
+        },
+        title: { text: null },
+        credits: { enabled: false },
+        xAxis: {
+          categories: categories,
+          labels: { style: { color: '#94a3b8', fontSize: '11px' } },
+          lineColor: '#334155',
+          tickColor: '#334155'
+        },
+        yAxis: {
+          min: 0,
+          title: { text: 'Documents Processed', style: { color: '#94a3b8' } },
+          gridLineColor: '#1e293b',
+          labels: { style: { color: '#94a3b8' } }
+        },
+        tooltip: {
+          headerFormat: '<span style="font-size:10px; color:#0f172a;">{point.key}</span><table>',
+          pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+            '<td style="padding:0"><b>{point.y} docs</b></td></tr>',
+          footerFormat: '</table>',
+          shared: true,
+          useHTML: true
+        },
+        plotOptions: {
+          column: {
+            borderRadius: 6,
+            color: '#10b981'
+          }
+        },
+        series: [{
+          name: 'Transfers / Receipts',
+          data: data
+        }]
+      });
+    }
+  </script>
+
+</body>
+</html>
