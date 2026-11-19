@@ -24,6 +24,31 @@
     canvas {
       touch-action: none;
     }
+
+    /* Caveman electric shock animation */
+    @keyframes cavemanShock {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      15% { transform: translate(-4px, -2px) rotate(-2deg); }
+      30% { transform: translate(4px, 2px) rotate(2deg); }
+      45% { transform: translate(-5px, 1px) rotate(-2.5deg); }
+      60% { transform: translate(4px, -2px) rotate(1.5deg); }
+      75% { transform: translate(-2px, 2px) rotate(-1deg); }
+    }
+
+    @keyframes sparkPulse {
+      0%, 100% { opacity: 0.25; transform: scale(0.92); }
+      50% { opacity: 1; transform: scale(1.12); }
+    }
+
+    .shock-shake {
+      animation: cavemanShock 0.45s ease-in-out infinite;
+      transform-origin: center;
+    }
+
+    .spark-burst {
+      animation: sparkPulse 0.35s ease-in-out infinite;
+      transform-origin: center;
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between p-3 sm:p-6">
@@ -31,22 +56,78 @@
   <!-- Header -->
   <header class="w-full max-w-md mx-auto mb-4 flex items-center justify-between">
     <div class="flex items-center space-x-2">
-      <div class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+      <div id="headerDot" class="w-3 h-3 bg-slate-600 rounded-full"></div>
       <h1 class="text-base font-bold tracking-tight text-slate-100">Document Receiving Proof</h1>
     </div>
     <div class="flex items-center space-x-2">
       <span id="authSenderBadge" class="text-[10px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-mono">Checking user...</span>
+      <a id="backGatewayBtn" href="index.html" class="hidden text-xs text-slate-400 hover:text-emerald-400 underline">Gateway</a>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="w-full max-w-md mx-auto space-y-4 mb-8">
-    
+  <!-- ================= UNAUTHORIZED CAVEMAN SHOCK GUARD ================= -->
+  <section id="authGuardView" class="w-full max-w-md mx-auto my-auto hidden">
+    <div class="bg-white text-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-300">
+      <div class="p-6 text-center space-y-3">
+        <p class="text-xs font-bold uppercase tracking-widest text-amber-600">Authentication Required</p>
+        <h2 class="text-4xl font-black tracking-tight text-slate-900">401</h2>
+
+        <!-- Caveman Holding Two Cables + Electric Shock Animation -->
+        <div class="w-full max-w-[300px] mx-auto py-1">
+          <svg viewBox="0 0 320 170" class="w-full h-auto overflow-visible" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 38 Q75 45 128 84" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round" />
+            <path d="M310 38 Q245 45 192 84" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round" />
+
+            <g class="shock-shake">
+              <g class="spark-burst">
+                <polygon points="160,12 167,34 190,26 176,46 198,56 174,64 185,86 163,72 152,94 146,70 122,78 138,58 118,46 142,40 135,18 154,32"
+                  fill="#facc15" stroke="#f97316" stroke-width="2" />
+                <circle cx="122" cy="84" r="5" fill="#fde047" />
+                <circle cx="198" cy="84" r="5" fill="#fde047" />
+              </g>
+
+              <rect x="145" y="118" width="10" height="26" rx="4" fill="#eab08a" />
+              <rect x="165" y="118" width="10" height="26" rx="4" fill="#eab08a" />
+              <ellipse cx="149" cy="145" rx="8" ry="4" fill="#334155" />
+              <ellipse cx="171" cy="145" rx="8" ry="4" fill="#334155" />
+
+              <path d="M138 78 L182 78 L188 122 L132 122 Z" fill="#f59e0b" stroke="#b45309" stroke-width="1.5" />
+
+              <path d="M138 86 L126 84" stroke="#eab08a" stroke-width="7" stroke-linecap="round" />
+              <path d="M182 86 L194 84" stroke="#eab08a" stroke-width="7" stroke-linecap="round" />
+
+              <circle cx="160" cy="56" r="17" fill="#f3be9b" />
+              <path d="M142 50 L138 35 L150 42 L156 29 L164 42 L175 32 L176 46 L184 42 L177 54 Z" fill="#451a03" />
+              <circle cx="154" cy="55" r="3" fill="#0f172a" />
+              <circle cx="166" cy="55" r="3" fill="#0f172a" />
+              <ellipse cx="160" cy="64" rx="4" ry="5" fill="#7f1d1d" />
+            </g>
+          </svg>
+        </div>
+
+        <h3 class="text-xl font-bold text-slate-900">Look like you're lost</h3>
+        <p class="text-xs text-slate-600 max-w-xs mx-auto">
+          You must sign in with an active Supabase Auth account before using the Document Receiving Proof Pad.
+        </p>
+
+        <div class="pt-2">
+          <a href="index.html"
+            class="inline-block px-6 py-2.5 rounded-lg bg-[#39ac31] hover:bg-[#2f9228] active:scale-[0.98] text-white text-sm font-semibold shadow transition">
+            Go Back to Login Page
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PROTECTED MAIN CONTAINER ================= -->
+  <main id="protectedMain" class="w-full max-w-md mx-auto space-y-4 mb-8 hidden">
+
     <!-- Lookup Existing Document Card -->
     <div class="glass-card rounded-2xl p-4 shadow-xl space-y-2.5">
       <h2 class="text-xs font-semibold tracking-wider text-emerald-400 uppercase">Lookup Existing Document</h2>
       <div class="flex space-x-2">
-        <input type="text" id="searchQuery" placeholder="Enter Doc No (e.g. DOC-00001) or Title..." 
+        <input type="text" id="searchQuery" placeholder="Enter Doc No (e.g. DOC-00001) or Title..."
           class="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors">
         <button onclick="lookupDocument()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 text-xs font-semibold rounded-xl transition-all border border-slate-700">
           Search
@@ -58,35 +139,29 @@
     <!-- Document Info Card -->
     <div class="glass-card rounded-2xl p-4 shadow-xl space-y-3">
       <h2 class="text-xs font-semibold tracking-wider text-emerald-400 uppercase">Document Info</h2>
-      
-      <!-- Document Title -->
+
       <div>
         <label class="block text-xs font-medium text-slate-300 mb-1">Document Title</label>
-        <input type="text" id="docTitle" placeholder="e.g., Transmittal - Q3 Financial Report" 
+        <input type="text" id="docTitle" placeholder="e.g., Transmittal - Q3 Financial Report"
           class="w-full px-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors">
       </div>
 
-      <!-- Received By -->
       <div>
         <label class="block text-xs font-medium text-slate-300 mb-1">Received By</label>
-        <input type="text" id="receivedBy" placeholder="Recipient Full Name" 
+        <input type="text" id="receivedBy" placeholder="Recipient Full Name"
           class="w-full px-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors">
       </div>
 
-      <!-- Receiving Department (Smart Dropdown) -->
       <div>
         <label class="block text-xs font-medium text-slate-300 mb-1">Receiving Department</label>
-        <input list="deptList" id="receivingDept" placeholder="Select or type department..." 
+        <input list="deptList" id="receivingDept" placeholder="Select or type department..."
           class="w-full px-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors">
-        <datalist id="deptList">
-          <!-- Populated dynamically -->
-        </datalist>
+        <datalist id="deptList"></datalist>
       </div>
 
-      <!-- Recipient Email Address -->
       <div>
         <label class="block text-xs font-medium text-slate-300 mb-1">Email Address</label>
-        <input type="email" id="recipientEmail" placeholder="recipient@company.com" 
+        <input type="email" id="recipientEmail" placeholder="recipient@company.com"
           class="w-full px-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors">
       </div>
     </div>
@@ -96,7 +171,6 @@
       <div class="flex items-center justify-between">
         <h2 class="text-xs font-semibold tracking-wider text-emerald-400 uppercase">Signature Pad</h2>
         <div class="flex items-center space-x-2">
-          <!-- Color Pickers -->
           <button onclick="setPenColor('#f8fafc')" class="w-5 h-5 rounded-full bg-slate-100 border border-slate-600 focus:outline-none" title="White"></button>
           <button onclick="setPenColor('#3b82f6')" class="w-5 h-5 rounded-full bg-blue-500 focus:outline-none" title="Blue"></button>
           <button onclick="setPenColor('#ef4444')" class="w-5 h-5 rounded-full bg-red-500 focus:outline-none" title="Red"></button>
@@ -104,7 +178,6 @@
         </div>
       </div>
 
-      <!-- Canvas Wrapper -->
       <div class="relative w-full h-44 bg-slate-900/90 border border-slate-700 rounded-xl overflow-hidden shadow-inner">
         <canvas id="sigCanvas" class="w-full h-full cursor-crosshair block"></canvas>
         <div class="absolute bottom-2 left-3 pointer-events-none text-[10px] text-slate-600 tracking-widest uppercase select-none">
@@ -164,7 +237,6 @@
         </div>
       </div>
 
-      <!-- Captured Signature Preview -->
       <div class="space-y-1">
         <span class="text-[10px] uppercase font-semibold text-slate-500">Authorized Signature</span>
         <div class="bg-slate-900 border border-slate-700 rounded-xl p-2 flex items-center justify-center h-20">
@@ -195,27 +267,67 @@
     const SUPABASE_ANON_KEY = "sb_publishable_-b5NQcuBhQk57Y-tXzDe_A_HR3Im8CH";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    let loggedInUserEmail = "system@company.com";
+    let loggedInUserEmail = null;
     let currentActiveDocNo = null;
+    let isAuthorized = false;
 
-    // Fetch authenticated user session on load
+    function showAuthGuard() {
+      isAuthorized = false;
+      loggedInUserEmail = null;
+      document.getElementById('protectedMain').classList.add('hidden');
+      document.getElementById('authGuardView').classList.remove('hidden');
+      document.getElementById('backGatewayBtn').classList.add('hidden');
+      document.getElementById('headerDot').className = 'w-3 h-3 bg-amber-500 rounded-full animate-pulse';
+      document.getElementById('authSenderBadge').innerText = 'Unauthorized';
+      document.getElementById('authSenderBadge').className = 'text-[10px] px-2.5 py-1 rounded-full bg-red-950/80 text-red-400 border border-red-800/60 font-mono';
+    }
+
+    function showProtectedPad(email) {
+      isAuthorized = true;
+      loggedInUserEmail = email;
+      document.getElementById('authGuardView').classList.add('hidden');
+      document.getElementById('protectedMain').classList.remove('hidden');
+      document.getElementById('backGatewayBtn').classList.remove('hidden');
+      document.getElementById('headerDot').className = 'w-3 h-3 bg-emerald-500 rounded-full animate-pulse';
+      document.getElementById('authSenderBadge').innerText = `Sender: ${email}`;
+      document.getElementById('authSenderBadge').className = 'text-[10px] px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-mono';
+      resizeCanvas();
+    }
+
+    async function enforceSession() {
+      try {
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        if (error || !session || !session.user || !session.user.email) {
+          showAuthGuard();
+          return null;
+        }
+        showProtectedPad(session.user.email);
+        return session.user;
+      } catch (err) {
+        console.warn('Session check error:', err);
+        showAuthGuard();
+        return null;
+      }
+    }
+
     window.addEventListener('DOMContentLoaded', async () => {
       loadDepartments();
-      try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session && session.user && session.user.email) {
-          loggedInUserEmail = session.user.email;
-          document.getElementById('authSenderBadge').innerText = `Sender: ${loggedInUserEmail}`;
-        } else {
-          document.getElementById('authSenderBadge').innerText = `Sender: Guest (No Session)`;
-        }
-      } catch (err) {
-        console.warn('Session check warning:', err);
+      await enforceSession();
+    });
+
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+      if (session && session.user && session.user.email) {
+        showProtectedPad(session.user.email);
+      } else {
+        showAuthGuard();
       }
     });
 
     // Lookup Document function by doc_no or doc_title
     async function lookupDocument() {
+      const user = await enforceSession();
+      if (!user || !isAuthorized) return;
+
       const query = document.getElementById('searchQuery').value.trim();
       const resultDiv = document.getElementById('lookupResult');
       if (!query) {
@@ -228,7 +340,7 @@
 
       try {
         let supabaseQuery = supabaseClient.from('document_proofs').select('*');
-        
+
         if (query.toUpperCase().startsWith('DOC-') || !isNaN(query)) {
           const searchFormatted = query.toUpperCase().startsWith('DOC-') ? query.toUpperCase() : `DOC-${query.padStart(5, '0')}`;
           supabaseQuery = supabaseQuery.or(`doc_no.eq.${searchFormatted},doc_no.eq.${query}`);
@@ -266,7 +378,7 @@
 
     // Smart Dropdown Initialization for Departments
     const defaultDepartments = ["Administrative", "Finance", "Human Resources", "Information Technology", "Logistics", "Operations", "Quality Assurance"];
-    
+
     function loadDepartments() {
       let savedDepts = JSON.parse(localStorage.getItem('smart_receiving_depts') || JSON.stringify(defaultDepartments));
       const datalist = document.getElementById('deptList');
@@ -299,8 +411,10 @@
 
     function resizeCanvas() {
       const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
       canvas.width = rect.width * window.devicePixelRatio;
       canvas.height = rect.height * window.devicePixelRatio;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
       ctx.strokeStyle = penColor;
       ctx.lineWidth = 2.5;
@@ -309,7 +423,6 @@
     }
 
     window.addEventListener('resize', resizeCanvas);
-    window.addEventListener('load', resizeCanvas);
 
     function setPenColor(color) {
       penColor = color;
@@ -323,7 +436,7 @@
     function getEventPos(e) {
       const rect = canvas.getBoundingClientRect();
       let clientX, clientY;
-      
+
       if (e.touches && e.touches.length > 0) {
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
@@ -342,6 +455,7 @@
     }
 
     function startDraw(e) {
+      if (!isAuthorized) return;
       e.preventDefault();
       isDrawing = true;
       const pos = getEventPos(e);
@@ -350,10 +464,10 @@
     }
 
     function draw(e) {
-      if (!isDrawing) return;
+      if (!isDrawing || !isAuthorized) return;
       e.preventDefault();
       const pos = getEventPos(e);
-      
+
       ctx.beginPath();
       ctx.moveTo(lastX, lastY);
       ctx.lineTo(pos.x, pos.y);
@@ -362,7 +476,7 @@
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.stroke();
-      
+
       lastX = pos.x;
       lastY = pos.y;
     }
@@ -403,6 +517,9 @@
 
     // Confirm & View Proof + Webhook Workflow
     async function confirmAndViewProof() {
+      const user = await enforceSession();
+      if (!user || !isAuthorized) return;
+
       const docTitle = document.getElementById('docTitle').value.trim();
       const receivedBy = document.getElementById('receivedBy').value.trim();
       const receivingDept = document.getElementById('receivingDept').value.trim();
@@ -475,9 +592,8 @@
           senderEmail: loggedInUserEmail
         };
 
-        // Send payload to your active working Make.com Webhook URL
         const makeWebhookUrl = "https://hook.eu1.make.com/rd52qv7psb7s3pl5mh3itf85d2o658fm";
-        
+
         await fetch(makeWebhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
