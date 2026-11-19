@@ -78,14 +78,13 @@
       box-shadow:
         0 28px 65px rgba(0, 0, 0, 0.82),
         -12px 0 45px var(--accent-soft);
-      transition: box-shadow 0.6s ease, border-color 0.6s ease;
+      transition: box-shadow 0.6s ease, border-color 0.6s ease, transform 0.4s ease, opacity 0.4s ease;
     }
 
     body.lamp-on .glass-card {
       border-left-color: var(--accent-beam);
     }
 
-    /* Light wash hitting the card's left & center surface */
     .glass-card::before {
       content: "";
       position: absolute;
@@ -103,6 +102,47 @@
 
     body.lamp-on .glass-card::before {
       opacity: 1;
+    }
+
+    /* Platform selection animations */
+    .platform-btn {
+      transition:
+        transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.32s ease,
+        filter 0.35s ease,
+        box-shadow 0.38s ease;
+    }
+
+    .platform-btn.is-launching {
+      transform: translateX(10px) scale(1.045);
+      z-index: 30;
+    }
+
+    .platform-btn.is-launching.launch-emerald {
+      box-shadow: 0 0 38px rgba(16, 185, 129, 0.55);
+    }
+
+    .platform-btn.is-launching.launch-sky {
+      box-shadow: 0 0 38px rgba(56, 189, 248, 0.55);
+    }
+
+    .platform-btn.is-dimmed {
+      opacity: 0.22;
+      transform: scale(0.96) translateX(-6px);
+      filter: blur(1.5px);
+      pointer-events: none;
+    }
+
+    /* Screen warp/fade overlay when launching into a platform */
+    #portalTransition {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #portalTransition.active {
+      opacity: 1;
+      pointer-events: auto;
     }
 
     .accent-btn {
@@ -126,7 +166,6 @@
       box-shadow: 0 0 0 2px var(--accent-soft);
     }
 
-    /* Pull chain interaction */
     #pullChainHit {
       cursor: grab;
       touch-action: none;
@@ -146,6 +185,12 @@
 </head>
 <body class="room-stage min-h-screen flex flex-col justify-between p-3 sm:p-6">
 
+  <!-- Portal Transition Overlay -->
+  <div id="portalTransition" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#080b0a]/95 backdrop-blur-md">
+    <div id="portalGlowRing" class="w-14 h-14 rounded-full border-2 border-emerald-400/70 flex items-center justify-center animate-ping mb-4"></div>
+    <p id="portalLabel" class="text-xs font-mono uppercase tracking-[0.25em] text-emerald-300">Launching Platform...</p>
+  </div>
+
   <!-- Header -->
   <header class="w-full max-w-5xl mx-auto mb-2 flex items-center justify-between z-20">
     <div class="flex items-center space-x-2">
@@ -153,7 +198,6 @@
       <h1 class="text-sm sm:text-base font-bold tracking-tight text-slate-200" id="headerTitle">Portal Authentication</h1>
     </div>
     <div class="flex items-center space-x-2.5">
-      <!-- Mood swatch button (visible when lamp is on) -->
       <button type="button" id="moodCycleBtn" onclick="cycleLampColor()"
         class="hidden text-[11px] px-2.5 py-1 rounded-full bg-black/50 text-slate-200 border border-white/10 hover:border-white/25 transition flex items-center space-x-1.5">
         <span id="moodDot" class="w-2 h-2 rounded-full" style="background:#f5b041;"></span>
@@ -177,7 +221,6 @@
       <div class="md:col-span-6 flex flex-col items-center justify-center relative select-none z-10">
         <svg id="lampSvg" class="w-full max-w-[350px] sm:max-w-[400px] h-auto overflow-visible" viewBox="0 0 420 390" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <!-- Metallic Shade Gradient -->
             <linearGradient id="shadeMetal" x1="120" y1="60" x2="230" y2="165" gradientUnits="userSpaceOnUse">
               <stop offset="0%" stop-color="#434947" />
               <stop offset="35%" stop-color="#252928" />
@@ -185,49 +228,42 @@
               <stop offset="100%" stop-color="#0c0e0d" />
             </linearGradient>
 
-            <!-- Specular Rim Highlight on Shade -->
             <linearGradient id="shadeRim" x1="125" y1="65" x2="215" y2="120" gradientUnits="userSpaceOnUse">
               <stop offset="0%" stop-color="rgba(255,255,255,0.32)" />
               <stop offset="55%" stop-color="rgba(255,255,255,0.05)" />
               <stop offset="100%" stop-color="rgba(255,255,255,0)" />
             </linearGradient>
 
-            <!-- Inner Shade Reflector (tinted dynamically) -->
             <radialGradient id="innerReflector" cx="50%" cy="45%" r="55%">
               <stop offset="0%" stop-color="#ffffff" stop-opacity="0.98" />
               <stop offset="45%" id="innerStopMid" stop-color="#f5b041" stop-opacity="0.90" />
               <stop offset="100%" id="innerStopEdge" stop-color="#78350f" stop-opacity="0.95" />
             </radialGradient>
 
-            <!-- Metallic Arm Gradient -->
             <linearGradient id="armMetal" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stop-color="#181b1a" />
               <stop offset="45%" stop-color="#3c4240" />
               <stop offset="100%" stop-color="#141615" />
             </linearGradient>
 
-            <!-- Brass Joint Gradient -->
             <radialGradient id="brassJoint" cx="35%" cy="35%" r="65%">
               <stop offset="0%" stop-color="#f6d37a" />
               <stop offset="55%" stop-color="#b8892d" />
               <stop offset="100%" stop-color="#5c4110" />
             </radialGradient>
 
-            <!-- Weighted Base Gradient -->
             <linearGradient id="baseMetal" x1="45" y1="322" x2="165" y2="352" gradientUnits="userSpaceOnUse">
               <stop offset="0%" stop-color="#343937" />
               <stop offset="50%" stop-color="#1e2221" />
               <stop offset="100%" stop-color="#0f1110" />
             </linearGradient>
 
-            <!-- Angled Volumetric Spotlight Cone Aimed Right Toward Login Card -->
             <linearGradient id="beamGrad" x1="185" y1="115" x2="520" y2="235" gradientUnits="userSpaceOnUse">
               <stop offset="0%" id="beamStopTop" stop-color="#f5b041" stop-opacity="0.52" />
               <stop offset="48%" id="beamStopMid" stop-color="#f5b041" stop-opacity="0.20" />
               <stop offset="100%" id="beamStopBot" stop-color="#f5b041" stop-opacity="0" />
             </linearGradient>
 
-            <!-- Desk Surface Light Pool -->
             <radialGradient id="floorPoolGrad" cx="50%" cy="50%" r="50%">
               <stop offset="0%" id="poolStopCenter" stop-color="#f5b041" stop-opacity="0.26" />
               <stop offset="65%" id="poolStopMid" stop-color="#f5b041" stop-opacity="0.08" />
@@ -243,77 +279,54 @@
             </filter>
           </defs>
 
-          <!-- Desk Contact Shadow -->
           <ellipse cx="105" cy="348" rx="68" ry="11" fill="rgba(0,0,0,0.78)" />
-
-          <!-- Subtle Desk Light Spill -->
           <ellipse cx="265" cy="348" rx="145" ry="20" fill="url(#floorPoolGrad)" class="floor-pool" />
-
-          <!-- Angled Volumetric Light Beam Illuminating the Login Card on the Right -->
           <polygon points="175,152 218,86 560,25 560,365" fill="url(#beamGrad)" class="lamp-beam" />
 
-          <!-- Lamp Base -->
           <ellipse cx="102" cy="341" rx="54" ry="10" fill="#0d0f0e" />
           <path d="M49 338 C49 325, 155 325, 155 338 L155 343 C155 351, 49 351, 49 343 Z" fill="url(#baseMetal)" stroke="#3b413f" stroke-width="1" />
           <ellipse cx="102" cy="331" rx="34" ry="6" fill="#2b302e" stroke="#484f4d" stroke-width="0.8" />
-          <!-- Base Pivot Stem -->
           <rect x="95" y="314" width="14" height="18" rx="4" fill="url(#armMetal)" />
           <circle cx="102" cy="316" r="6" fill="url(#brassJoint)" />
 
-          <!-- Lower Articulated Arm -->
           <g transform="rotate(-21 102 316)">
             <rect x="96" y="210" width="5" height="106" rx="2.5" fill="url(#armMetal)" />
             <rect x="104" y="210" width="4" height="106" rx="2" fill="#232726" />
-            <!-- Tension Spring Detail -->
             <line x1="102" y1="232" x2="102" y2="296" stroke="#8a6c2e" stroke-width="1.5" stroke-dasharray="2.5 2.5" />
           </g>
 
-          <!-- Elbow Joint -->
           <circle cx="64" cy="217" r="10.5" fill="#181b1a" stroke="#434947" stroke-width="1.5" />
           <circle cx="64" cy="217" r="6.5" fill="url(#brassJoint)" />
           <circle cx="64" cy="217" r="2.2" fill="#2d2108" />
 
-          <!-- Upper Articulated Arm -->
           <g transform="rotate(38 64 217)">
             <rect x="59" y="107" width="5" height="110" rx="2.5" fill="url(#armMetal)" />
             <rect x="66" y="107" width="4" height="110" rx="2" fill="#242827" />
           </g>
 
-          <!-- Neck Socket & Swivel -->
           <circle cx="132" cy="130" r="7.5" fill="url(#brassJoint)" />
           <path d="M128 124 L152 108 L160 118 L136 134 Z" fill="#232726" stroke="#454c4a" stroke-width="1" />
 
-          <!-- Lamp Head Group Tilted Toward the Login Card -->
           <g transform="rotate(-26 175 122)">
-            <!-- Inner Shade Opening & Reflector -->
             <ellipse cx="196" cy="118" rx="18" ry="48" fill="#161817" />
             <ellipse cx="196" cy="118" rx="15" ry="45" fill="url(#innerReflector)" class="bulb-glow" />
 
-            <!-- Glowing Bulb Sphere -->
             <circle id="lampBulb" cx="192" cy="118" r="13.5" fill="#2a2e2d" />
             <circle id="lampBulbLit" cx="192" cy="118" r="13.5" fill="#fffbeb" filter="url(#softGlow)" class="bulb-glow" />
 
-            <!-- Outer Bell Lamp Shade -->
             <path d="M150 96 C158 76, 184 70, 200 72 L198 164 C182 166, 158 160, 150 140 Z"
               fill="url(#shadeMetal)" stroke="#3e4442" stroke-width="1.2" />
-            <!-- Rear Cap -->
             <path d="M138 106 C138 94, 148 88, 154 94 L154 142 C148 148, 138 142, 138 130 Z"
               fill="#171a19" stroke="#4d5552" stroke-width="1" />
-            <!-- Specular Highlight Arc -->
             <path d="M156 96 C166 82, 182 78, 194 79" stroke="url(#shadeRim)" stroke-width="3" stroke-linecap="round" />
           </g>
 
-          <!-- Interactive Pull-Chain Cord & Bead (hangs vertically under the tilted shade) -->
           <g id="pullChainGroup">
-            <!-- Cord line -->
             <line id="chainCord" x1="164" y1="154" x2="164" y2="224" stroke="#9ca3af" stroke-width="1.6" stroke-dasharray="2 1.5" />
-            <!-- Brass/Silver Bead -->
             <circle id="chainBead" cx="164" cy="227" r="4.8" fill="url(#brassJoint)" stroke="#fef3c7" stroke-width="0.7" />
-            <!-- Invisible larger touch/drag hit area -->
             <rect id="pullChainHit" x="144" y="150" width="40" height="98" fill="transparent" />
           </g>
 
-          <!-- Prompt Pill beside the Pull Chain -->
           <g id="pullHintGroup" transform="translate(178, 208)" class="hint-badge pointer-events-none">
             <rect x="0" y="0" width="112" height="22" rx="11" fill="rgba(22, 25, 24, 0.92)" stroke="rgba(255,255,255,0.14)" stroke-width="1" />
             <text x="56" y="14.5" text-anchor="middle" fill="#d1d5db" font-size="10" font-family="system-ui, sans-serif">
@@ -323,10 +336,9 @@
         </svg>
       </div>
 
-      <!-- Login Card (Illuminated & Revealed when Lamp is Turned On) -->
+      <!-- Login Card -->
       <div class="md:col-span-6 w-full max-w-[395px] mx-auto login-card-shell z-20" id="loginCardShell">
         <div class="glass-card rounded-2xl p-6 sm:p-7 space-y-5">
-          <!-- Top Mini Header -->
           <div class="text-center space-y-1 relative z-10">
             <span class="text-[10px] font-bold tracking-[0.22em] uppercase text-slate-400">Your Space</span>
             <h2 class="text-2xl font-bold text-slate-100 tracking-tight">Welcome</h2>
@@ -371,17 +383,18 @@
 
   <!-- ================= VIEW 2: LANDING PAGE ================= -->
   <section id="landingView" class="w-full max-w-md mx-auto space-y-5 my-auto hidden z-10">
-    <div class="glass-card rounded-2xl p-6 shadow-2xl space-y-6 text-center">
-      <div class="space-y-1">
+    <div id="landingCard" class="glass-card rounded-2xl p-6 shadow-2xl space-y-6 text-center">
+      <div class="space-y-1 relative z-10">
         <span class="text-xs font-semibold tracking-wider text-emerald-400 uppercase">Gateway Access</span>
         <h2 class="text-xl font-bold text-slate-100">Select Platform</h2>
         <p class="text-xs text-slate-400">Logged in as <span id="landingUserEmail" class="text-slate-200 font-semibold">User</span></p>
       </div>
 
-      <div class="space-y-3 pt-2">
-        <!-- Receiving Platform Button (Links to signpad.html) -->
-        <a href="signpad.html"
-          class="w-full py-4 px-5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-bold rounded-2xl text-sm shadow-lg shadow-emerald-900/40 transition-all flex items-center justify-between group">
+      <div class="space-y-3 pt-2 relative z-10">
+        <!-- Receiving Platform Button -->
+        <a id="receivingBtn" href="signpad.html"
+          onclick="launchPlatform(event, 'signpad.html', 'receivingBtn', 'dashboardBtn', 'emerald', 'Opening Receiving Platform...')"
+          class="platform-btn w-full py-4 px-5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-bold rounded-2xl text-sm shadow-lg shadow-emerald-900/40 flex items-center justify-between group">
           <div class="flex items-center space-x-3">
             <div class="p-2 bg-emerald-700/50 rounded-xl">
               <svg class="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -391,17 +404,18 @@
           <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
         </a>
 
-        <!-- Dashboard Button -->
-        <button disabled
-          class="w-full py-4 px-5 bg-slate-800/60 text-slate-500 border border-slate-700/60 font-bold rounded-2xl text-sm cursor-not-allowed flex items-center justify-between opacity-80">
+        <!-- Dashboard Button (Linked to dashboard.html) -->
+        <a id="dashboardBtn" href="dashboard.html"
+          onclick="launchPlatform(event, 'dashboard.html', 'dashboardBtn', 'receivingBtn', 'sky', 'Opening Dashboard...')"
+          class="platform-btn w-full py-4 px-5 bg-sky-600 hover:bg-sky-500 active:scale-[0.98] text-white font-bold rounded-2xl text-sm shadow-lg shadow-sky-950/50 flex items-center justify-between group">
           <div class="flex items-center space-x-3">
-            <div class="p-2 bg-slate-800 rounded-xl">
-              <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+            <div class="p-2 bg-sky-700/50 rounded-xl">
+              <svg class="w-5 h-5 text-sky-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
             </div>
             <span class="tracking-wide">DASHBOARD</span>
           </div>
-          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-500 border border-slate-800">COMING SOON</span>
-        </button>
+          <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+        </a>
       </div>
     </div>
   </section>
@@ -416,6 +430,47 @@
     const SUPABASE_URL = "https://dideaglufjrautyomrzm.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_-b5NQcuBhQk57Y-tXzDe_A_HR3Im8CH";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Launch transition when selecting Receiving Platform or Dashboard
+    let isNavigatingPlatform = false;
+    function launchPlatform(e, url, selectedId, otherId, tone, labelText) {
+      if (isNavigatingPlatform) {
+        e.preventDefault();
+        return;
+      }
+      e.preventDefault();
+      isNavigatingPlatform = true;
+
+      const selectedEl = document.getElementById(selectedId);
+      const otherEl = document.getElementById(otherId);
+      const overlay = document.getElementById("portalTransition");
+      const ring = document.getElementById("portalGlowRing");
+      const label = document.getElementById("portalLabel");
+
+      if (selectedEl) {
+        selectedEl.classList.add("is-launching", tone === "sky" ? "launch-sky" : "launch-emerald");
+      }
+      if (otherEl) {
+        otherEl.classList.add("is-dimmed");
+      }
+
+      if (label) {
+        label.innerText = labelText;
+        label.className = "text-xs font-mono uppercase tracking-[0.25em] " + (tone === "sky" ? "text-sky-300" : "text-emerald-300");
+      }
+      if (ring) {
+        ring.className = "w-14 h-14 rounded-full border-2 flex items-center justify-center animate-ping mb-4 " +
+          (tone === "sky" ? "border-sky-400/70" : "border-emerald-400/70");
+      }
+
+      setTimeout(() => {
+        if (overlay) overlay.classList.add("active");
+      }, 160);
+
+      setTimeout(() => {
+        window.location.href = url;
+      }, 420);
+    }
 
     // Lamp Color Palettes
     const LAMP_COLORS = [
@@ -440,7 +495,6 @@
 
       const now = audioCtx.currentTime;
 
-      // Crisp mechanical pull-chain click
       const clickOsc = audioCtx.createOscillator();
       const clickGain = audioCtx.createGain();
       clickOsc.type = "triangle";
@@ -453,7 +507,6 @@
       clickOsc.start(now);
       clickOsc.stop(now + 0.04);
 
-      // Subtle 120Hz warm bulb hum when turning ON
       if (turningOn) {
         const hum = audioCtx.createOscillator();
         const humGain = audioCtx.createGain();
@@ -481,7 +534,6 @@
         root.style.setProperty("--wall-light", c.wall);
       }
 
-      // Update SVG gradient stops
       document.getElementById("innerStopMid").setAttribute("stop-color", c.hex);
       document.getElementById("innerStopEdge").setAttribute("stop-color", c.deep);
       document.getElementById("beamStopTop").setAttribute("stop-color", c.hex);
@@ -539,7 +591,6 @@
       document.getElementById("soundToggleBtn").innerText = soundEnabled ? "Sound: On" : "Sound: Off";
     }
 
-    // Spring-animated Pull-Chain Drag & Click Physics
     (function initPullChain() {
       const hitArea = document.getElementById("pullChainHit");
       const cord = document.getElementById("chainCord");
@@ -620,7 +671,6 @@
       hitArea.addEventListener("pointercancel", endDrag);
     })();
 
-    // View Navigation
     function navigateTo(viewName) {
       document.getElementById('loginView').classList.add('hidden');
       document.getElementById('landingView').classList.add('hidden');
@@ -637,7 +687,6 @@
       }
     }
 
-    // Supabase Auth Login
     async function handleLogin(e) {
       e.preventDefault();
       const email = document.getElementById('loginEmail').value.trim();
@@ -679,7 +728,6 @@
       setLampState(true);
     }
 
-    // Check active session on load
     window.addEventListener('DOMContentLoaded', async () => {
       applyLampColor(0);
       const { data: { session } } = await supabaseClient.auth.getSession();
