@@ -25,29 +25,155 @@
       touch-action: none;
     }
 
-    /* Caveman electric shock animation */
-    @keyframes cavemanShock {
-      0%, 100% { transform: translate(0, 0) rotate(0deg); }
-      15% { transform: translate(-4px, -2px) rotate(-2deg); }
-      30% { transform: translate(4px, 2px) rotate(2deg); }
-      45% { transform: translate(-5px, 1px) rotate(-2.5deg); }
-      60% { transform: translate(4px, -2px) rotate(1.5deg); }
-      75% { transform: translate(-2px, 2px) rotate(-1deg); }
+    /* Multi-stage Caveman Shock Sequence (~6.8s loop) */
+    @keyframes leftArmReach {
+      0%, 15% {
+        transform: rotate(38deg);
+      }
+      45%, 56% {
+        transform: rotate(-16deg);
+      }
+      62% {
+        transform: rotate(-38deg);
+      }
+      85%, 100% {
+        transform: rotate(38deg);
+      }
     }
 
-    @keyframes sparkPulse {
-      0%, 100% { opacity: 0.25; transform: scale(0.92); }
-      50% { opacity: 1; transform: scale(1.12); }
+    @keyframes leftWireSwing {
+      0%, 15% {
+        d: path("M 10 38 Q 62 32 95 72");
+      }
+      45%, 56% {
+        d: path("M 10 38 Q 78 68 134 94");
+      }
+      62% {
+        d: path("M 10 38 Q 65 45 105 62");
+      }
+      85%, 100% {
+        d: path("M 10 38 Q 62 32 95 72");
+      }
     }
 
-    .shock-shake {
-      animation: cavemanShock 0.45s ease-in-out infinite;
-      transform-origin: center;
+    @keyframes cavemanBodyCycle {
+      0%, 50% {
+        transform: translate(0px, 0px) rotate(0deg);
+      }
+      54% {
+        transform: translate(-4px, -2px) rotate(-2deg);
+      }
+      58% {
+        transform: translate(4px, 2px) rotate(2deg);
+      }
+      62% {
+        transform: translate(-4px, -1px) rotate(-2deg);
+      }
+      66% {
+        transform: translate(3px, 1px) rotate(1.5deg);
+      }
+      72% {
+        transform: translate(0px, -22px) rotate(0deg);
+      }
+      78% {
+        transform: translate(0px, -25px) rotate(0deg);
+      }
+      86% {
+        transform: translate(0px, 3px) rotate(0deg);
+      }
+      90%, 100% {
+        transform: translate(0px, 0px) rotate(0deg);
+      }
     }
 
-    .spark-burst {
-      animation: sparkPulse 0.35s ease-in-out infinite;
-      transform-origin: center;
+    @keyframes electricArcFlash {
+      0%, 51% {
+        opacity: 0;
+        transform: scale(0.75);
+      }
+      54% {
+        opacity: 1;
+        transform: scale(1.06);
+      }
+      59% {
+        opacity: 0.55;
+        transform: scale(0.96);
+      }
+      63% {
+        opacity: 1;
+        transform: scale(1.16);
+      }
+      70% {
+        opacity: 0.7;
+        transform: scale(1.26);
+      }
+      76%, 100% {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+    }
+
+    @keyframes shockArmsFlung {
+      0%, 67% {
+        opacity: 0;
+      }
+      70%, 82% {
+        opacity: 1;
+      }
+      86%, 100% {
+        opacity: 0;
+      }
+    }
+
+    @keyframes normalArmsVisible {
+      0%, 67% {
+        opacity: 1;
+      }
+      70%, 82% {
+        opacity: 0;
+      }
+      86%, 100% {
+        opacity: 1;
+      }
+    }
+
+    .anim-left-arm {
+      transform-box: fill-box;
+      transform-origin: 90% 20%;
+      animation: leftArmReach 6.8s ease-in-out infinite;
+    }
+
+    .anim-left-wire {
+      animation: leftWireSwing 6.8s ease-in-out infinite;
+    }
+
+    .anim-caveman-body {
+      transform-box: fill-box;
+      transform-origin: 50% 85%;
+      animation: cavemanBodyCycle 6.8s ease-in-out infinite;
+    }
+
+    .anim-spark-flash {
+      transform-box: fill-box;
+      transform-origin: 50% 50%;
+      animation: electricArcFlash 6.8s ease-out infinite;
+    }
+
+    .anim-arms-flung {
+      animation: shockArmsFlung 6.8s ease-in-out infinite;
+    }
+
+    .anim-arms-normal {
+      animation: normalArmsVisible 6.8s ease-in-out infinite;
+    }
+
+    .replay-sequence .anim-left-arm,
+    .replay-sequence .anim-left-wire,
+    .replay-sequence .anim-caveman-body,
+    .replay-sequence .anim-spark-flash,
+    .replay-sequence .anim-arms-flung,
+    .replay-sequence .anim-arms-normal {
+      animation: none !important;
     }
   </style>
 </head>
@@ -68,51 +194,93 @@
   <!-- ================= UNAUTHORIZED CAVEMAN SHOCK GUARD ================= -->
   <section id="authGuardView" class="w-full max-w-md mx-auto my-auto hidden">
     <div class="bg-white text-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-300">
-      <div class="p-6 text-center space-y-3">
-        <p class="text-xs font-bold uppercase tracking-widest text-amber-600">Authentication Required</p>
+      <div class="p-6 text-center space-y-2.5">
         <h2 class="text-4xl font-black tracking-tight text-slate-900">401</h2>
 
-        <!-- Caveman Holding Two Cables + Electric Shock Animation -->
-        <div class="w-full max-w-[300px] mx-auto py-1">
-          <svg viewBox="0 0 320 170" class="w-full h-auto overflow-visible" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 38 Q75 45 128 84" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round" />
-            <path d="M310 38 Q245 45 192 84" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round" />
+        <!-- Multi-Stage Caveman Cable Grab & Shock Scene -->
+        <div id="cavemanSceneWrapper" class="w-full max-w-[340px] mx-auto py-1">
+          <svg viewBox="0 0 360 185" class="w-full h-auto overflow-visible" xmlns="http://www.w3.org/2000/svg">
+            <!-- Soft Ground Shadow & Grass Tufts -->
+            <ellipse cx="180" cy="162" rx="135" ry="7" fill="#e2e8f0" />
+            <path d="M28 162 Q33 151 38 162 Q43 153 47 162" fill="#86efac" />
+            <path d="M312 162 Q317 152 322 162 Q327 154 331 162" fill="#86efac" />
 
-            <g class="shock-shake">
-              <g class="spark-burst">
-                <polygon points="160,12 167,34 190,26 176,46 198,56 174,64 185,86 163,72 152,94 146,70 122,78 138,58 118,46 142,40 135,18 154,32"
-                  fill="#facc15" stroke="#f97316" stroke-width="2" />
-                <circle cx="122" cy="84" r="5" fill="#fde047" />
-                <circle cx="198" cy="84" r="5" fill="#fde047" />
+            <!-- Left Cave Stone Pillar -->
+            <path d="M52 162 L58 96 L84 96 L90 162 Z" fill="#cbd5e1" />
+            <rect x="55" y="92" width="32" height="7" rx="3" fill="#94a3b8" />
+
+            <!-- Right Cave Boulder -->
+            <path d="M246 162 C244 128, 266 104, 294 106 C318 108, 328 134, 324 162 Z" fill="#cbd5e1" />
+
+            <!-- Right Cable Held by Caveman -->
+            <path d="M342 42 Q272 52 204 106" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round" />
+
+            <!-- Left Swinging Cable -->
+            <path class="anim-left-wire" d="M18 42 Q75 36 112 80" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round" />
+
+            <!-- Animated Caveman Body -->
+            <g class="anim-caveman-body">
+              <!-- Electric Arc & Spark Burst -->
+              <g class="anim-spark-flash">
+                <polygon points="180,14 190,42 220,32 202,58 232,70 202,82 216,110 188,92 174,122 166,90 136,102 156,76 130,62 160,52 150,24 174,40"
+                  fill="#facc15" stroke="#f97316" stroke-width="2.5" stroke-linejoin="round" />
+                <path d="M126 102 L144 95 L138 112" stroke="#fde047" stroke-width="3" stroke-linecap="round" fill="none" />
+                <path d="M234 72 L214 78 L222 92" stroke="#fde047" stroke-width="3" stroke-linecap="round" fill="none" />
               </g>
 
-              <rect x="145" y="118" width="10" height="26" rx="4" fill="#eab08a" />
-              <rect x="165" y="118" width="10" height="26" rx="4" fill="#eab08a" />
-              <ellipse cx="149" cy="145" rx="8" ry="4" fill="#334155" />
-              <ellipse cx="171" cy="145" rx="8" ry="4" fill="#334155" />
+              <!-- Legs -->
+              <path d="M166 128 L160 158" stroke="#eab08a" stroke-width="9" stroke-linecap="round" />
+              <path d="M194 128 L200 158" stroke="#eab08a" stroke-width="9" stroke-linecap="round" />
+              <ellipse cx="157" cy="160" rx="8" ry="4" fill="#1e293b" />
+              <ellipse cx="203" cy="160" rx="8" ry="4" fill="#1e293b" />
 
-              <path d="M138 78 L182 78 L188 122 L132 122 Z" fill="#f59e0b" stroke="#b45309" stroke-width="1.5" />
+              <!-- Caveman Tunic -->
+              <path d="M158 84 L202 84 L210 132 L150 132 Z" fill="#f59e0b" stroke="#b45309" stroke-width="1.5" />
+              <!-- Tunic Hem Zigzag -->
+              <path d="M150 132 L160 125 L170 132 L180 125 L190 132 L200 125 L210 132" fill="#f59e0b" />
 
-              <path d="M138 86 L126 84" stroke="#eab08a" stroke-width="7" stroke-linecap="round" />
-              <path d="M182 86 L194 84" stroke="#eab08a" stroke-width="7" stroke-linecap="round" />
+              <!-- Normal Arms (Reaching to Left Wire & Holding Right Wire) -->
+              <g class="anim-arms-normal">
+                <!-- Right arm holding cable -->
+                <path d="M202 94 L206 106" stroke="#eab08a" stroke-width="8" stroke-linecap="round" />
+                <!-- Swinging left arm -->
+                <g class="anim-left-arm">
+                  <path d="M158 94 L126 84" stroke="#eab08a" stroke-width="8" stroke-linecap="round" />
+                  <circle cx="124" cy="83" r="4.5" fill="#f3be9b" />
+                </g>
+              </g>
 
-              <circle cx="160" cy="56" r="17" fill="#f3be9b" />
-              <path d="M142 50 L138 35 L150 42 L156 29 L164 42 L175 32 L176 46 L184 42 L177 54 Z" fill="#451a03" />
-              <circle cx="154" cy="55" r="3" fill="#0f172a" />
-              <circle cx="166" cy="55" r="3" fill="#0f172a" />
-              <ellipse cx="160" cy="64" rx="4" ry="5" fill="#7f1d1d" />
+              <!-- Flung-Out Shock Arms (During Upward Hop) -->
+              <g class="anim-arms-flung" opacity="0">
+                <path d="M158 92 L124 72" stroke="#eab08a" stroke-width="8" stroke-linecap="round" />
+                <path d="M202 92 L236 72" stroke="#eab08a" stroke-width="8" stroke-linecap="round" />
+              </g>
+
+              <!-- Head, Wild Hair & Beard -->
+              <circle cx="180" cy="60" r="18" fill="#f3be9b" />
+              <path d="M160 54 L154 36 L168 44 L175 28 L184 44 L196 32 L198 48 L208 43 L199 58 Z" fill="#451a03" />
+              <!-- Beard -->
+              <path d="M164 64 C164 80, 196 80, 196 64 C192 73, 168 73, 164 64 Z" fill="#451a03" />
+              <!-- Eyes & Shocked Mouth -->
+              <circle cx="174" cy="58" r="2.8" fill="#0f172a" />
+              <circle cx="186" cy="58" r="2.8" fill="#0f172a" />
+              <ellipse cx="180" cy="67" rx="4" ry="4.5" fill="#7f1d1d" />
             </g>
           </svg>
         </div>
 
         <h3 class="text-xl font-bold text-slate-900">Look like you're lost</h3>
         <p class="text-xs text-slate-600 max-w-xs mx-auto">
-          You must sign in with an active Supabase Auth account before using the Document Receiving Proof Pad.
+          Authentication is required before accessing the Document Receiving Proof Pad.
         </p>
 
-        <div class="pt-2">
+        <div class="pt-2 flex items-center justify-center space-x-2">
+          <button type="button" onclick="replayCavemanShock()"
+            class="px-3.5 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-300 transition">
+            Replay Shock
+          </button>
           <a href="index.html"
-            class="inline-block px-6 py-2.5 rounded-lg bg-[#39ac31] hover:bg-[#2f9228] active:scale-[0.98] text-white text-sm font-semibold shadow transition">
+            class="inline-block px-5 py-2.5 rounded-lg bg-[#39ac31] hover:bg-[#2f9228] active:scale-[0.98] text-white text-sm font-semibold shadow transition">
             Go Back to Login Page
           </a>
         </div>
@@ -271,6 +439,14 @@
     let currentActiveDocNo = null;
     let isAuthorized = false;
 
+    function replayCavemanShock() {
+      const wrapper = document.getElementById("cavemanSceneWrapper");
+      if (!wrapper) return;
+      wrapper.classList.add("replay-sequence");
+      void wrapper.offsetWidth;
+      wrapper.classList.remove("replay-sequence");
+    }
+
     function showAuthGuard() {
       isAuthorized = false;
       loggedInUserEmail = null;
@@ -280,6 +456,7 @@
       document.getElementById('headerDot').className = 'w-3 h-3 bg-amber-500 rounded-full animate-pulse';
       document.getElementById('authSenderBadge').innerText = 'Unauthorized';
       document.getElementById('authSenderBadge').className = 'text-[10px] px-2.5 py-1 rounded-full bg-red-950/80 text-red-400 border border-red-800/60 font-mono';
+      replayCavemanShock();
     }
 
     function showProtectedPad(email) {
