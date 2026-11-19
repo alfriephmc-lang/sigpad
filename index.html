@@ -1,548 +1,699 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#080b12" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Document Receiving Gateway</title>
-
-  <!-- Existing Supabase connection -->
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS Client CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- GSAP animation library -->
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-
   <style>
     :root {
-      color-scheme: dark;
-      --bg: #080b12;
-      --panel: rgba(17, 23, 34, .78);
-      --panel-border: rgba(255,255,255,.11);
-      --text: #f4f6fb;
-      --muted: #9aa5b7;
-      --accent: #f4b860;
-      --accent-rgb: 244,184,96;
-      --accent-deep: #b8752d;
-      --danger: #fb7185;
+      --accent: #f5b041;
+      --accent-soft: rgba(245, 176, 65, 0.22);
+      --accent-beam: rgba(245, 176, 65, 0.28);
+      --accent-card-sheen: rgba(245, 176, 65, 0.16);
+      --accent-text: #111315;
     }
-    * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; }
+
     body {
-      min-height: 100vh;
-      overflow-x: hidden;
-      background:
-        radial-gradient(ellipse at 50% 110%, rgba(var(--accent-rgb), .08), transparent 45%),
-        linear-gradient(145deg, #0b101a 0%, #080b12 55%, #05070c 100%);
-      color: var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background-color: #0e1110;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       touch-action: manipulation;
+      overflow-x: hidden;
     }
-    button, input { font: inherit; }
-    button { cursor: pointer; }
-    .app-shell { min-height: 100vh; display: flex; flex-direction: column; position: relative; isolation: isolate; }
-    #scene {
-      position: fixed; inset: 0; z-index: -2; width: 100%; height: 100%;
-      display: block; pointer-events: none;
-    }
-    .ambient {
-      position: fixed; inset: 0; z-index: -1; pointer-events: none;
+
+    /* Room wall & floor surface */
+    .room-stage {
       background:
-        radial-gradient(ellipse 42% 40% at 23% 52%, rgba(var(--accent-rgb), .12), transparent 75%),
-        radial-gradient(ellipse 55% 55% at 82% 50%, rgba(28,49,79,.13), transparent 75%);
-      opacity: .72; transition: opacity .8s ease;
+        radial-gradient(ellipse 65% 55% at 48% 48%, var(--wall-light, rgba(255,255,255,0.015)) 0%, transparent 72%),
+        linear-gradient(180deg, #141816 0%, #0e1110 74%, #090b0a 100%);
+      transition: background 0.6s ease;
     }
-    body.lights-off .ambient { opacity: .12; }
-    .topbar {
-      width: min(1180px, calc(100% - 48px)); margin: 0 auto; padding: 27px 0;
-      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+
+    /* Lamp cast spotlight cone & floor pool */
+    .lamp-beam,
+    .floor-pool,
+    .bulb-glow {
+      opacity: 0;
+      transition: opacity 0.45s ease, fill 0.6s ease;
     }
-    .brand { display: flex; align-items: center; gap: 11px; font-size: 13px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
-    .brand-mark {
-      width: 10px; height: 10px; border-radius: 50%; background: var(--accent);
-      box-shadow: 0 0 18px rgba(var(--accent-rgb), .9);
+
+    body.lamp-on .lamp-beam,
+    body.lamp-on .floor-pool,
+    body.lamp-on .bulb-glow {
+      opacity: 1;
     }
-    .top-actions { display: flex; align-items: center; gap: 12px; }
-    .user-badge { display: none; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #b8f3d0; background: rgba(16,75,49,.28); border: 1px solid rgba(74,222,128,.22); border-radius: 99px; padding: 7px 12px; font-size: 11px; }
-    .logout-btn { display: none; color: var(--muted); border: 0; background: transparent; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
-    .logout-btn:hover { color: #fff; }
-    main {
-      width: min(1180px, calc(100% - 48px)); flex: 1; margin: 0 auto;
-      display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(350px, .92fr);
-      align-items: center; gap: clamp(24px, 5vw, 78px); padding: 20px 0 54px;
+
+    /* Login card hidden until lamp is turned on */
+    .login-card-shell {
+      opacity: 0;
+      transform: translateY(16px) scale(0.96);
+      pointer-events: none;
+      filter: blur(4px);
+      transition:
+        opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        filter 0.45s ease;
     }
-    .visual-side { min-height: 570px; position: relative; display: flex; align-items: center; justify-content: center; }
-    .visual-copy { position: absolute; left: 2%; bottom: 4%; max-width: 380px; z-index: 2; pointer-events: none; }
-    .eyebrow { color: var(--accent); text-transform: uppercase; letter-spacing: .22em; font-size: 10px; font-weight: 800; }
-    .visual-copy h1 { margin: 13px 0 10px; font-size: clamp(32px, 4.2vw, 55px); line-height: 1.04; letter-spacing: -.055em; font-weight: 650; }
-    .visual-copy p { max-width: 330px; margin: 0; color: #a5afbf; font-size: 13px; line-height: 1.8; }
-    .lamp-hint {
-      position: absolute; left: 50%; bottom: 8%; transform: translateX(-50%);
-      color: rgba(220,228,240,.58); font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
-      display: flex; align-items: center; gap: 8px; white-space: nowrap;
+
+    body.lamp-on .login-card-shell {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+      filter: blur(0);
     }
-    .hint-dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); }
-    .auth-side { width: 100%; max-width: 440px; justify-self: end; position: relative; }
-    .auth-card {
-      position: relative; padding: clamp(26px, 4vw, 42px); border: 1px solid var(--panel-border);
-      border-radius: 25px; background: linear-gradient(145deg, rgba(24,31,44,.84), rgba(10,14,23,.76));
-      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-      box-shadow: 0 28px 90px rgba(0,0,0,.48), inset 0 1px rgba(255,255,255,.055);
+
+    /* Card illuminated directly by the lamp beam from the left */
+    .glass-card {
+      position: relative;
       overflow: hidden;
+      background: linear-gradient(135deg, rgba(32, 34, 36, 0.94) 0%, rgba(19, 21, 23, 0.98) 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-left: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow:
+        0 28px 65px rgba(0, 0, 0, 0.82),
+        -12px 0 45px var(--accent-soft);
+      transition: box-shadow 0.6s ease, border-color 0.6s ease;
     }
-    .auth-card::before {
-      content: ""; position: absolute; width: 220px; height: 220px; top: -160px; right: -100px;
-      background: radial-gradient(circle, rgba(var(--accent-rgb),.24), transparent 70%); pointer-events: none;
+
+    body.lamp-on .glass-card {
+      border-left-color: var(--accent-beam);
     }
-    .card-kicker { color: var(--accent); font-size: 10px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
-    .auth-card h2 { margin: 13px 0 8px; font-size: 29px; line-height: 1.1; letter-spacing: -.045em; }
-    .subheading { color: var(--muted); margin: 0 0 29px; font-size: 12px; line-height: 1.7; }
-    .field { margin: 0 0 17px; }
-    .field label { display: block; margin: 0 0 8px; color: #d2d9e5; font-size: 11px; font-weight: 650; }
-    .field input {
-      width: 100%; padding: 14px 15px; border: 1px solid rgba(148,163,184,.2); border-radius: 12px;
-      outline: none; background: rgba(4,8,15,.62); color: #f8fafc; font-size: 13px;
-      transition: border-color .2s, box-shadow .2s, background .2s;
+
+    /* Light wash hitting the card's left & center surface */
+    .glass-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        circle at -10% 35%,
+        var(--accent-card-sheen) 0%,
+        rgba(255, 255, 255, 0.03) 45%,
+        transparent 75%
+      );
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
     }
-    .field input::placeholder { color: #667184; }
-    .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb),.12); background: rgba(4,8,15,.82); }
-    .password-wrap { position: relative; }
-    .password-wrap input { padding-right: 58px; }
-    .show-password { position: absolute; top: 50%; right: 12px; transform: translateY(-50%); color: #8e9bad; border: 0; background: transparent; font-size: 10px; }
-    .error-box { display: none; margin: 0 0 14px; padding: 11px 12px; border: 1px solid rgba(251,113,133,.25); border-radius: 10px; color: #fda4af; background: rgba(127,29,29,.2); font-size: 11px; line-height: 1.5; }
-    .submit-btn, .platform-link {
-      width: 100%; min-height: 49px; display: flex; align-items: center; justify-content: center; gap: 10px;
-      border: 1px solid rgba(var(--accent-rgb),.7); border-radius: 12px; color: #1b1309;
-      background: linear-gradient(135deg, var(--accent), var(--accent-deep)); font-size: 12px; font-weight: 850;
-      letter-spacing: .08em; text-transform: uppercase; box-shadow: 0 10px 30px rgba(var(--accent-rgb),.18);
-      transition: transform .2s, filter .2s, box-shadow .2s;
+
+    body.lamp-on .glass-card::before {
+      opacity: 1;
     }
-    .submit-btn:hover, .platform-link:hover { transform: translateY(-2px); filter: brightness(1.08); box-shadow: 0 14px 34px rgba(var(--accent-rgb),.25); }
-    .submit-btn:disabled { opacity: .65; cursor: wait; transform: none; }
-    .secure-note { margin: 18px 0 0; display: flex; align-items: center; justify-content: center; gap: 7px; color: #7e899b; font-size: 10px; }
-    .secure-note svg { width: 12px; height: 12px; color: #76c99a; }
-    .theme-row { display: flex; justify-content: center; gap: 9px; margin-top: 20px; }
-    .theme-swatch { width: 17px; height: 17px; padding: 0; border: 2px solid rgba(255,255,255,.25); border-radius: 50%; background: var(--swatch); box-shadow: 0 0 12px color-mix(in srgb, var(--swatch) 45%, transparent); }
-    .theme-swatch[aria-pressed="true"] { outline: 1px solid #fff; outline-offset: 3px; }
-    .switch-control {
-      position: absolute; z-index: 3; left: 50%; top: 53%; transform: translate(-50%,-50%);
-      width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,.28);
-      color: #fff; background: rgba(9,13,21,.75); backdrop-filter: blur(12px);
-      display: grid; place-items: center; box-shadow: 0 8px 24px rgba(0,0,0,.35);
-      transition: border-color .25s, box-shadow .25s, background .25s;
+
+    .accent-btn {
+      background-color: var(--accent);
+      color: var(--accent-text);
+      box-shadow: 0 8px 24px var(--accent-soft);
+      transition: background-color 0.5s ease, transform 0.15s ease, box-shadow 0.5s ease;
     }
-    .switch-control:hover { border-color: var(--accent); box-shadow: 0 0 25px rgba(var(--accent-rgb),.3); }
-    .switch-control svg { width: 17px; height: 17px; }
-    .landing-view { display: none; }
-    .landing-view .auth-card { text-align: center; }
-    .platform-link { margin-top: 13px; text-decoration: none; color: #1b1309; }
-    .disabled-link { width: 100%; margin-top: 12px; min-height: 49px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-radius: 12px; border: 1px solid rgba(148,163,184,.13); color: #778397; background: rgba(30,41,59,.35); font-size: 11px; font-weight: 750; letter-spacing: .06em; cursor: not-allowed; }
-    .coming-soon { font-size: 9px; color: #68758a; border: 1px solid rgba(148,163,184,.17); border-radius: 5px; padding: 4px 6px; }
-    footer { width: min(1180px, calc(100% - 48px)); margin: 0 auto; padding: 0 0 22px; color: #697487; font-size: 10px; text-align: center; }
-    .lights-off .auth-card { border-color: rgba(255,255,255,.07); }
-    @media (max-width: 850px) {
-      main { grid-template-columns: 1fr; gap: 5px; padding-top: 5px; }
-      .visual-side { min-height: 390px; }
-      .visual-copy { left: 3%; bottom: 1%; max-width: 290px; }
-      .visual-copy h1 { font-size: 36px; }
-      .visual-copy p { font-size: 11px; }
-      .auth-side { max-width: 500px; justify-self: center; }
-      .lamp-hint { bottom: 5%; }
+
+    .accent-btn:hover {
+      filter: brightness(1.07);
     }
-    @media (max-width: 520px) {
-      .topbar, main, footer { width: min(100% - 30px, 460px); }
-      .topbar { padding: 18px 0; }
-      .brand { font-size: 10px; letter-spacing: .08em; }
-      .visual-side { min-height: 320px; }
-      .visual-copy { bottom: 0; left: 0; }
-      .visual-copy h1 { font-size: 30px; }
-      .visual-copy p { max-width: 260px; }
-      .auth-card { padding: 25px 21px; border-radius: 20px; }
-      .auth-card h2 { font-size: 26px; }
-      .user-badge { max-width: 120px; }
-      .lamp-hint { bottom: 3%; font-size: 8px; }
+
+    .accent-link {
+      color: var(--accent);
+      transition: color 0.5s ease;
     }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+
+    .accent-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-soft);
+    }
+
+    /* Pull chain interaction */
+    #pullChainHit {
+      cursor: grab;
+      touch-action: none;
+    }
+    #pullChainHit:active {
+      cursor: grabbing;
+    }
+
+    @keyframes floatHint {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(4px); }
+    }
+    .hint-badge {
+      animation: floatHint 2.2s ease-in-out infinite;
     }
   </style>
 </head>
-<body class="lights-off">
-  <canvas id="scene" aria-hidden="true"></canvas>
-  <div class="ambient" aria-hidden="true"></div>
+<body class="room-stage min-h-screen flex flex-col justify-between p-3 sm:p-6">
 
-  <div class="app-shell">
-    <header class="topbar">
-      <div class="brand"><span class="brand-mark"></span><span id="headerTitle">Portal Authentication</span></div>
-      <div class="top-actions">
-        <span id="userBadge" class="user-badge"></span>
-        <button id="logoutBtn" class="logout-btn" type="button">Logout</button>
+  <!-- Header -->
+  <header class="w-full max-w-5xl mx-auto mb-2 flex items-center justify-between z-20">
+    <div class="flex items-center space-x-2">
+      <div id="statusDot" class="w-2.5 h-2.5 bg-slate-600 rounded-full transition-colors duration-500"></div>
+      <h1 class="text-sm sm:text-base font-bold tracking-tight text-slate-200" id="headerTitle">Portal Authentication</h1>
+    </div>
+    <div class="flex items-center space-x-2.5">
+      <!-- Mood swatch button (visible when lamp is on) -->
+      <button type="button" id="moodCycleBtn" onclick="cycleLampColor()"
+        class="hidden text-[11px] px-2.5 py-1 rounded-full bg-black/50 text-slate-200 border border-white/10 hover:border-white/25 transition flex items-center space-x-1.5">
+        <span id="moodDot" class="w-2 h-2 rounded-full" style="background:#f5b041;"></span>
+        <span id="moodName">Warm Gold</span>
+      </button>
+
+      <button type="button" id="soundToggleBtn" onclick="toggleSound()"
+        class="text-[11px] px-2.5 py-1 rounded-full bg-black/50 text-slate-300 border border-white/10 hover:border-white/25 transition">
+        Sound: On
+      </button>
+      <span id="userBadge" class="hidden text-[10px] px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-mono"></span>
+      <button id="logoutBtn" onclick="handleLogout()" class="hidden text-xs text-slate-400 hover:text-red-400 underline">Logout</button>
+    </div>
+  </header>
+
+  <!-- ================= VIEW 1: LOGIN STAGE ================= -->
+  <section id="loginView" class="w-full max-w-5xl mx-auto my-auto z-10 relative">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 items-center">
+
+      <!-- Realistic Articulated Desk Lamp Aimed at the Login Card -->
+      <div class="md:col-span-6 flex flex-col items-center justify-center relative select-none z-10">
+        <svg id="lampSvg" class="w-full max-w-[350px] sm:max-w-[400px] h-auto overflow-visible" viewBox="0 0 420 390" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <!-- Metallic Shade Gradient -->
+            <linearGradient id="shadeMetal" x1="120" y1="60" x2="230" y2="165" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#434947" />
+              <stop offset="35%" stop-color="#252928" />
+              <stop offset="85%" stop-color="#141716" />
+              <stop offset="100%" stop-color="#0c0e0d" />
+            </linearGradient>
+
+            <!-- Specular Rim Highlight on Shade -->
+            <linearGradient id="shadeRim" x1="125" y1="65" x2="215" y2="120" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.32)" />
+              <stop offset="55%" stop-color="rgba(255,255,255,0.05)" />
+              <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+            </linearGradient>
+
+            <!-- Inner Shade Reflector (tinted dynamically) -->
+            <radialGradient id="innerReflector" cx="50%" cy="45%" r="55%">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.98" />
+              <stop offset="45%" id="innerStopMid" stop-color="#f5b041" stop-opacity="0.90" />
+              <stop offset="100%" id="innerStopEdge" stop-color="#78350f" stop-opacity="0.95" />
+            </radialGradient>
+
+            <!-- Metallic Arm Gradient -->
+            <linearGradient id="armMetal" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#181b1a" />
+              <stop offset="45%" stop-color="#3c4240" />
+              <stop offset="100%" stop-color="#141615" />
+            </linearGradient>
+
+            <!-- Brass Joint Gradient -->
+            <radialGradient id="brassJoint" cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stop-color="#f6d37a" />
+              <stop offset="55%" stop-color="#b8892d" />
+              <stop offset="100%" stop-color="#5c4110" />
+            </radialGradient>
+
+            <!-- Weighted Base Gradient -->
+            <linearGradient id="baseMetal" x1="45" y1="322" x2="165" y2="352" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#343937" />
+              <stop offset="50%" stop-color="#1e2221" />
+              <stop offset="100%" stop-color="#0f1110" />
+            </linearGradient>
+
+            <!-- Angled Volumetric Spotlight Cone Aimed Right Toward Login Card -->
+            <linearGradient id="beamGrad" x1="185" y1="115" x2="520" y2="235" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" id="beamStopTop" stop-color="#f5b041" stop-opacity="0.52" />
+              <stop offset="48%" id="beamStopMid" stop-color="#f5b041" stop-opacity="0.20" />
+              <stop offset="100%" id="beamStopBot" stop-color="#f5b041" stop-opacity="0" />
+            </linearGradient>
+
+            <!-- Desk Surface Light Pool -->
+            <radialGradient id="floorPoolGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" id="poolStopCenter" stop-color="#f5b041" stop-opacity="0.26" />
+              <stop offset="65%" id="poolStopMid" stop-color="#f5b041" stop-opacity="0.08" />
+              <stop offset="100%" stop-color="#f5b041" stop-opacity="0" />
+            </radialGradient>
+
+            <filter id="softGlow" x="-45%" y="-45%" width="190%" height="190%">
+              <feGaussianBlur stdDeviation="9" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          <!-- Desk Contact Shadow -->
+          <ellipse cx="105" cy="348" rx="68" ry="11" fill="rgba(0,0,0,0.78)" />
+
+          <!-- Subtle Desk Light Spill -->
+          <ellipse cx="265" cy="348" rx="145" ry="20" fill="url(#floorPoolGrad)" class="floor-pool" />
+
+          <!-- Angled Volumetric Light Beam Illuminating the Login Card on the Right -->
+          <polygon points="175,152 218,86 560,25 560,365" fill="url(#beamGrad)" class="lamp-beam" />
+
+          <!-- Lamp Base -->
+          <ellipse cx="102" cy="341" rx="54" ry="10" fill="#0d0f0e" />
+          <path d="M49 338 C49 325, 155 325, 155 338 L155 343 C155 351, 49 351, 49 343 Z" fill="url(#baseMetal)" stroke="#3b413f" stroke-width="1" />
+          <ellipse cx="102" cy="331" rx="34" ry="6" fill="#2b302e" stroke="#484f4d" stroke-width="0.8" />
+          <!-- Base Pivot Stem -->
+          <rect x="95" y="314" width="14" height="18" rx="4" fill="url(#armMetal)" />
+          <circle cx="102" cy="316" r="6" fill="url(#brassJoint)" />
+
+          <!-- Lower Articulated Arm -->
+          <g transform="rotate(-21 102 316)">
+            <rect x="96" y="210" width="5" height="106" rx="2.5" fill="url(#armMetal)" />
+            <rect x="104" y="210" width="4" height="106" rx="2" fill="#232726" />
+            <!-- Tension Spring Detail -->
+            <line x1="102" y1="232" x2="102" y2="296" stroke="#8a6c2e" stroke-width="1.5" stroke-dasharray="2.5 2.5" />
+          </g>
+
+          <!-- Elbow Joint -->
+          <circle cx="64" cy="217" r="10.5" fill="#181b1a" stroke="#434947" stroke-width="1.5" />
+          <circle cx="64" cy="217" r="6.5" fill="url(#brassJoint)" />
+          <circle cx="64" cy="217" r="2.2" fill="#2d2108" />
+
+          <!-- Upper Articulated Arm -->
+          <g transform="rotate(38 64 217)">
+            <rect x="59" y="107" width="5" height="110" rx="2.5" fill="url(#armMetal)" />
+            <rect x="66" y="107" width="4" height="110" rx="2" fill="#242827" />
+          </g>
+
+          <!-- Neck Socket & Swivel -->
+          <circle cx="132" cy="130" r="7.5" fill="url(#brassJoint)" />
+          <path d="M128 124 L152 108 L160 118 L136 134 Z" fill="#232726" stroke="#454c4a" stroke-width="1" />
+
+          <!-- Lamp Head Group Tilted Toward the Login Card -->
+          <g transform="rotate(-26 175 122)">
+            <!-- Inner Shade Opening & Reflector -->
+            <ellipse cx="196" cy="118" rx="18" ry="48" fill="#161817" />
+            <ellipse cx="196" cy="118" rx="15" ry="45" fill="url(#innerReflector)" class="bulb-glow" />
+
+            <!-- Glowing Bulb Sphere -->
+            <circle id="lampBulb" cx="192" cy="118" r="13.5" fill="#2a2e2d" />
+            <circle id="lampBulbLit" cx="192" cy="118" r="13.5" fill="#fffbeb" filter="url(#softGlow)" class="bulb-glow" />
+
+            <!-- Outer Bell Lamp Shade -->
+            <path d="M150 96 C158 76, 184 70, 200 72 L198 164 C182 166, 158 160, 150 140 Z"
+              fill="url(#shadeMetal)" stroke="#3e4442" stroke-width="1.2" />
+            <!-- Rear Cap -->
+            <path d="M138 106 C138 94, 148 88, 154 94 L154 142 C148 148, 138 142, 138 130 Z"
+              fill="#171a19" stroke="#4d5552" stroke-width="1" />
+            <!-- Specular Highlight Arc -->
+            <path d="M156 96 C166 82, 182 78, 194 79" stroke="url(#shadeRim)" stroke-width="3" stroke-linecap="round" />
+          </g>
+
+          <!-- Interactive Pull-Chain Cord & Bead (hangs vertically under the tilted shade) -->
+          <g id="pullChainGroup">
+            <!-- Cord line -->
+            <line id="chainCord" x1="164" y1="154" x2="164" y2="224" stroke="#9ca3af" stroke-width="1.6" stroke-dasharray="2 1.5" />
+            <!-- Brass/Silver Bead -->
+            <circle id="chainBead" cx="164" cy="227" r="4.8" fill="url(#brassJoint)" stroke="#fef3c7" stroke-width="0.7" />
+            <!-- Invisible larger touch/drag hit area -->
+            <rect id="pullChainHit" x="144" y="150" width="40" height="98" fill="transparent" />
+          </g>
+
+          <!-- Prompt Pill beside the Pull Chain -->
+          <g id="pullHintGroup" transform="translate(178, 208)" class="hint-badge pointer-events-none">
+            <rect x="0" y="0" width="112" height="22" rx="11" fill="rgba(22, 25, 24, 0.92)" stroke="rgba(255,255,255,0.14)" stroke-width="1" />
+            <text x="56" y="14.5" text-anchor="middle" fill="#d1d5db" font-size="10" font-family="system-ui, sans-serif">
+              ← Pull / click chain
+            </text>
+          </g>
+        </svg>
       </div>
-    </header>
 
-    <main>
-      <section class="visual-side" aria-label="Interactive desk lamp">
-        <div class="visual-copy" id="visualCopy">
-          <div class="eyebrow">A brighter way to work</div>
-          <h1>Welcome to your<br>document workspace.</h1>
-          <p>A secure space for receiving, managing and processing documents with confidence.</p>
-        </div>
-        <button class="switch-control" id="lampSwitch" type="button" aria-label="Turn lamp off" title="Toggle lamp">
-          <svg id="switchIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2v10"/><path d="M6.2 5.8a8 8 0 1 0 11.6 0"/></svg>
-        </button>
-        <div class="lamp-hint"><span class="hint-dot"></span><span>Tap the lamp switch to toggle the light</span></div>
-      </section>
+      <!-- Login Card (Illuminated & Revealed when Lamp is Turned On) -->
+      <div class="md:col-span-6 w-full max-w-[395px] mx-auto login-card-shell z-20" id="loginCardShell">
+        <div class="glass-card rounded-2xl p-6 sm:p-7 space-y-5">
+          <!-- Top Mini Header -->
+          <div class="text-center space-y-1 relative z-10">
+            <span class="text-[10px] font-bold tracking-[0.22em] uppercase text-slate-400">Your Space</span>
+            <h2 class="text-2xl font-bold text-slate-100 tracking-tight">Welcome</h2>
+            <p class="text-xs text-slate-400">Sign in to continue to Document Gateway</p>
+          </div>
 
-      <section class="auth-side" id="loginView">
-        <div class="auth-card" id="loginCard">
-          <div class="card-kicker">Secure access</div>
-          <h2>Welcome back.</h2>
-          <p class="subheading">Sign in with your authorized account to continue to the Document Receiving Gateway.</p>
-
-          <form id="loginForm">
-            <div class="field">
-              <label for="loginEmail">Email address</label>
-              <input id="loginEmail" type="email" autocomplete="username" required placeholder="user@company.com" />
+          <form onsubmit="handleLogin(event)" class="space-y-4 relative z-10">
+            <div>
+              <label class="block text-[11px] font-medium text-slate-300 mb-1.5">Email Address</label>
+              <input type="email" id="loginEmail" required placeholder="user@company.com"
+                class="accent-input w-full px-3.5 py-2.5 bg-black/50 border border-white/10 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-all">
             </div>
-            <div class="field">
-              <label for="loginPassword">Password</label>
-              <div class="password-wrap">
-                <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Enter your password" />
-                <button class="show-password" id="showPassword" type="button">SHOW</button>
+
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-[11px] font-medium text-slate-300">Password</label>
+                <span class="text-[11px] accent-link opacity-85">Supabase Auth</span>
               </div>
+              <input type="password" id="loginPassword" required placeholder="••••••••"
+                class="accent-input w-full px-3.5 py-2.5 bg-black/50 border border-white/10 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-all">
             </div>
-            <div class="error-box" id="loginError" role="alert"></div>
-            <button class="submit-btn" type="submit" id="loginBtn"><span>Sign in</span><span aria-hidden="true">↗</span></button>
+
+            <div id="loginError" class="hidden text-xs text-red-400 bg-red-950/50 border border-red-800/60 p-2.5 rounded-xl text-center"></div>
+
+            <button type="submit" id="loginBtn"
+              class="accent-btn w-full py-3 px-4 active:scale-[0.99] font-semibold rounded-xl text-sm">
+              Sign In &rarr;
+            </button>
           </form>
 
-          <div class="secure-note">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-            Protected with Supabase Authentication
-          </div>
-          <div class="theme-row" aria-label="Lamp light color">
-            <button class="theme-swatch" style="--swatch:#f4b860" data-theme="amber" aria-label="Amber light" aria-pressed="true"></button>
-            <button class="theme-swatch" style="--swatch:#63c9f2" data-theme="cyan" aria-label="Cyan light" aria-pressed="false"></button>
-            <button class="theme-swatch" style="--swatch:#ed8ed4" data-theme="pink" aria-label="Pink light" aria-pressed="false"></button>
-            <button class="theme-swatch" style="--swatch:#7bd6a0" data-theme="green" aria-label="Green light" aria-pressed="false"></button>
-            <button class="theme-swatch" style="--swatch:#dce8ff" data-theme="white" aria-label="White light" aria-pressed="false"></button>
+          <div class="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400 relative z-10">
+            <span>Pull lamp chain to toggle light</span>
+            <button type="button" onclick="cycleLampColor()" class="accent-link hover:underline font-medium">
+              Shift color
+            </button>
           </div>
         </div>
-      </section>
+      </div>
 
-      <section class="auth-side landing-view" id="landingView">
-        <div class="auth-card" id="landingCard">
-          <div class="card-kicker">Gateway access</div>
-          <h2>Document Gateway</h2>
-          <p class="subheading">You're signed in as <strong id="landingUserEmail" style="color:#f4f6fb"></strong>. Select a platform to continue.</p>
-          <a class="platform-link" href="signpad.html"><span>Open Receiving Platform</span><span aria-hidden="true">↗</span></a>
-          <div class="disabled-link"><span>Dashboard</span><span class="coming-soon">COMING SOON</span></div>
-          <div class="secure-note">Your session is active and protected.</div>
-        </div>
-      </section>
-    </main>
+    </div>
+  </section>
 
-    <footer>Secure Document Receiving Gateway &nbsp;•&nbsp; Powered by Supabase Auth</footer>
-  </div>
+  <!-- ================= VIEW 2: LANDING PAGE ================= -->
+  <section id="landingView" class="w-full max-w-md mx-auto space-y-5 my-auto hidden z-10">
+    <div class="glass-card rounded-2xl p-6 shadow-2xl space-y-6 text-center">
+      <div class="space-y-1">
+        <span class="text-xs font-semibold tracking-wider text-emerald-400 uppercase">Gateway Access</span>
+        <h2 class="text-xl font-bold text-slate-100">Select Platform</h2>
+        <p class="text-xs text-slate-400">Logged in as <span id="landingUserEmail" class="text-slate-200 font-semibold">User</span></p>
+      </div>
 
-  <script type="module">
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+      <div class="space-y-3 pt-2">
+        <!-- Receiving Platform Button (Links to signpad.html) -->
+        <a href="signpad.html"
+          class="w-full py-4 px-5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-bold rounded-2xl text-sm shadow-lg shadow-emerald-900/40 transition-all flex items-center justify-between group">
+          <div class="flex items-center space-x-3">
+            <div class="p-2 bg-emerald-700/50 rounded-xl">
+              <svg class="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            </div>
+            <span class="tracking-wide">RECEIVING PLATFORM</span>
+          </div>
+          <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+        </a>
 
-    // ---------------------------------------------------------------------
-    // Supabase configuration — retained from your supplied existing index.
-    // Keep the publishable/anon key in the browser; never put a service_role
-    // key in frontend code.
-    // ---------------------------------------------------------------------
+        <!-- Dashboard Button -->
+        <button disabled
+          class="w-full py-4 px-5 bg-slate-800/60 text-slate-500 border border-slate-700/60 font-bold rounded-2xl text-sm cursor-not-allowed flex items-center justify-between opacity-80">
+          <div class="flex items-center space-x-3">
+            <div class="p-2 bg-slate-800 rounded-xl">
+              <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+            </div>
+            <span class="tracking-wide">DASHBOARD</span>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-500 border border-slate-800">COMING SOON</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="w-full max-w-5xl mx-auto text-center text-[10px] text-slate-600 z-10">
+    Secure Document Receiving Gateway &bull; Powered by Supabase Auth
+  </footer>
+
+  <script>
+    // Supabase Connection
     const SUPABASE_URL = "https://dideaglufjrautyomrzm.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_-b5NQcuBhQk57Y-tXzDe_A_HR3Im8CH";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // ---------------------------------------------------------------------
-    // Three.js scene: a stylized 3D desk lamp with a real spotlight.
-    // ---------------------------------------------------------------------
-    const canvas = document.getElementById('scene');
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x080b12);
-    scene.fog = new THREE.Fog(0x080b12, 8, 22);
+    // Lamp Color Palettes
+    const LAMP_COLORS = [
+      { name: "Warm Gold", hex: "#f5b041", deep: "#78350f", soft: "rgba(245, 176, 65, 0.24)", beam: "rgba(245, 176, 65, 0.38)", sheen: "rgba(245, 176, 65, 0.17)", wall: "rgba(245, 176, 65, 0.15)", text: "#111315" },
+      { name: "Electric Cyan", hex: "#38bdf8", deep: "#0c4a6e", soft: "rgba(56, 189, 248, 0.24)", beam: "rgba(56, 189, 248, 0.38)", sheen: "rgba(56, 189, 248, 0.17)", wall: "rgba(56, 189, 248, 0.15)", text: "#091118" },
+      { name: "Crimson Rose", hex: "#f43f5e", deep: "#881337", soft: "rgba(244, 63, 94, 0.26)", beam: "rgba(244, 63, 94, 0.38)", sheen: "rgba(244, 63, 94, 0.17)", wall: "rgba(244, 63, 94, 0.15)", text: "#ffffff" },
+      { name: "Emerald Glow", hex: "#22c55e", deep: "#14532d", soft: "rgba(34, 197, 94, 0.24)", beam: "rgba(34, 197, 94, 0.38)", sheen: "rgba(34, 197, 94, 0.17)", wall: "rgba(34, 197, 94, 0.15)", text: "#08140d" },
+      { name: "Daylight White", hex: "#e2e8f0", deep: "#475569", soft: "rgba(226, 232, 240, 0.22)", beam: "rgba(226, 232, 240, 0.34)", sheen: "rgba(226, 232, 240, 0.15)", wall: "rgba(226, 232, 240, 0.13)", text: "#0f172a" }
+    ];
 
-    const camera = new THREE.PerspectiveCamera(34, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 2.1, 10.8);
+    let isLampOn = false;
+    let colorIdx = 0;
+    let soundEnabled = true;
+    let audioCtx = null;
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.7));
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    function playLampSound(turningOn) {
+      if (!soundEnabled) return;
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      if (!audioCtx) audioCtx = new AudioContextClass();
+      if (audioCtx.state === "suspended") audioCtx.resume();
 
-    scene.add(new THREE.HemisphereLight(0x91a7c7, 0x111018, 0.48));
-    const keyLight = new THREE.DirectionalLight(0x9fb6d8, 1.0);
-    keyLight.position.set(-4, 7, 5);
-    keyLight.castShadow = true;
-    keyLight.shadow.mapSize.set(1024, 1024);
-    scene.add(keyLight);
+      const now = audioCtx.currentTime;
 
-    const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(200, 200),
-      new THREE.MeshStandardMaterial({ color: 0x101621, roughness: .88, metalness: .12 })
-    );
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -1.35;
-    floor.receiveShadow = true;
-    scene.add(floor);
+      // Crisp mechanical pull-chain click
+      const clickOsc = audioCtx.createOscillator();
+      const clickGain = audioCtx.createGain();
+      clickOsc.type = "triangle";
+      clickOsc.frequency.setValueAtTime(turningOn ? 920 : 640, now);
+      clickOsc.frequency.exponentialRampToValueAtTime(180, now + 0.035);
+      clickGain.gain.setValueAtTime(0.12, now);
+      clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      clickOsc.connect(clickGain);
+      clickGain.connect(audioCtx.destination);
+      clickOsc.start(now);
+      clickOsc.stop(now + 0.04);
 
-    const lampGroup = new THREE.Group();
-    lampGroup.position.set(-2.0, -0.05, 0);
-    scene.add(lampGroup);
-
-    const metalMat = new THREE.MeshStandardMaterial({ color: 0x252d3a, metalness: .82, roughness: .28 });
-    const edgeMat = new THREE.MeshStandardMaterial({ color: 0x596273, metalness: .9, roughness: .23 });
-    const shadeMat = new THREE.MeshStandardMaterial({ color: 0x303949, metalness: .72, roughness: .3, side: THREE.DoubleSide });
-    const bulbMat = new THREE.MeshStandardMaterial({ color: 0xffe6b6, emissive: 0xffbd63, emissiveIntensity: 0, roughness: .25 });
-
-    function cylinder(parent, rTop, rBottom, height, material, x, y, z, radial=48) {
-      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBottom, height, radial), material);
-      mesh.position.set(x,y,z); mesh.castShadow = true; mesh.receiveShadow = true; parent.add(mesh); return mesh;
-    }
-    function sphere(parent, radius, material, x,y,z, scale=[1,1,1]) {
-      const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 24), material);
-      mesh.position.set(x,y,z); mesh.scale.set(...scale); mesh.castShadow = true; parent.add(mesh); return mesh;
+      // Subtle 120Hz warm bulb hum when turning ON
+      if (turningOn) {
+        const hum = audioCtx.createOscillator();
+        const humGain = audioCtx.createGain();
+        hum.type = "sine";
+        hum.frequency.setValueAtTime(120, now + 0.05);
+        humGain.gain.setValueAtTime(0.001, now);
+        humGain.gain.linearRampToValueAtTime(0.035, now + 0.08);
+        humGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+        hum.connect(humGain);
+        humGain.connect(audioCtx.destination);
+        hum.start(now + 0.05);
+        hum.stop(now + 0.35);
+      }
     }
 
-    // Weighted circular base
-    cylinder(lampGroup, .88, .96, .18, metalMat, 0, -1.22, 0);
-    cylinder(lampGroup, .78, .86, .035, edgeMat, 0, -1.11, 0);
-    // Upright and articulated arms
-    const stem = cylinder(lampGroup, .075, .09, 1.55, metalMat, 0, -.32, 0);
-    stem.rotation.z = -.12;
-    sphere(lampGroup, .16, edgeMat, .10, .42, 0, [1,1,.9]);
-    const arm = cylinder(lampGroup, .055, .065, 1.42, edgeMat, .64, .65, 0);
-    arm.rotation.z = Math.PI / 2 - .43;
-    sphere(lampGroup, .105, metalMat, 1.28, 1.08, 0);
-    // Lamp head points down and slightly toward the login side
-    const headPivot = new THREE.Group();
-    headPivot.position.set(1.38, 1.08, 0);
-    headPivot.rotation.z = -.48;
-    lampGroup.add(headPivot);
-    const shade = new THREE.Mesh(new THREE.CylinderGeometry(.22, .62, .72, 64, 1, true), shadeMat);
-    shade.rotation.z = Math.PI;
-    shade.position.set(.12, -.32, 0);
-    shade.castShadow = true; headPivot.add(shade);
-    const shadeTop = cylinder(headPivot, .22, .22, .08, edgeMat, .12, .045, 0);
-    const bulb = sphere(headPivot, .17, bulbMat, .12, -.69, 0, [1,.55,1]);
+    function applyLampColor(idx) {
+      const c = LAMP_COLORS[idx];
+      const root = document.documentElement;
+      root.style.setProperty("--accent", c.hex);
+      root.style.setProperty("--accent-soft", c.soft);
+      root.style.setProperty("--accent-beam", c.beam);
+      root.style.setProperty("--accent-card-sheen", c.sheen);
+      root.style.setProperty("--accent-text", c.text);
+      if (isLampOn) {
+        root.style.setProperty("--wall-light", c.wall);
+      }
 
-    const spot = new THREE.SpotLight(0xffc779, 0, 15, Math.PI/5, .48, 1.3);
-    spot.position.set(-.50, .34, .05);
-    spot.target.position.set(1.4, -1.2, -1.4);
-    spot.castShadow = true;
-    spot.shadow.mapSize.set(1024,1024);
-    scene.add(spot, spot.target);
-    const glow = new THREE.PointLight(0xffc779, 0, 5, 2);
-    glow.position.set(-.50, .30, .1);
-    scene.add(glow);
+      // Update SVG gradient stops
+      document.getElementById("innerStopMid").setAttribute("stop-color", c.hex);
+      document.getElementById("innerStopEdge").setAttribute("stop-color", c.deep);
+      document.getElementById("beamStopTop").setAttribute("stop-color", c.hex);
+      document.getElementById("beamStopMid").setAttribute("stop-color", c.hex);
+      document.getElementById("beamStopBot").setAttribute("stop-color", c.hex);
+      document.getElementById("poolStopCenter").setAttribute("stop-color", c.hex);
+      document.getElementById("poolStopMid").setAttribute("stop-color", c.hex);
 
-    // Soft pool of light on the desk
-    const pool = new THREE.Mesh(
-      new THREE.CircleGeometry(2.25, 64),
-      new THREE.MeshBasicMaterial({ color: 0xffc779, transparent: true, opacity: 0, depthWrite: false })
-    );
-    pool.rotation.x = -Math.PI/2;
-    pool.position.set(-.05, -1.335, -1.0);
-    pool.scale.set(1.35, .75, 1);
-    scene.add(pool);
+      document.getElementById("moodDot").style.background = c.hex;
+      document.getElementById("moodName").innerText = c.name;
+    }
 
-    let lightsOn = false;
-    let currentTheme = 'amber';
-    const themes = {
-      amber: { hex: 0xffc779, css: '#f4b860', rgb: '244,184,96', deep: '#b8752d' },
-      cyan:  { hex: 0x63c9f2, css: '#63c9f2', rgb: '99,201,242', deep: '#277ca8' },
-      pink:  { hex: 0xed8ed4, css: '#ed8ed4', rgb: '237,142,212', deep: '#a94e91' },
-      green: { hex: 0x7bd6a0, css: '#7bd6a0', rgb: '123,214,160', deep: '#32875b' },
-      white: { hex: 0xdce8ff, css: '#dce8ff', rgb: '220,232,255', deep: '#8299c7' }
-    };
+    function setLampState(on) {
+      isLampOn = on;
+      document.body.classList.toggle("lamp-on", isLampOn);
 
-    function setTheme(name) {
-      currentTheme = themes[name] ? name : 'amber';
-      const t = themes[currentTheme];
-      document.documentElement.style.setProperty('--accent', t.css);
-      document.documentElement.style.setProperty('--accent-rgb', t.rgb);
-      document.documentElement.style.setProperty('--accent-deep', t.deep);
-      const color = new THREE.Color(t.hex);
-      spot.color.copy(color); glow.color.copy(color); pool.material.color.copy(color);
-      bulbMat.emissive.copy(color);
-      document.querySelectorAll('.theme-swatch').forEach(btn => {
-        btn.setAttribute('aria-pressed', String(btn.dataset.theme === currentTheme));
+      const statusDot = document.getElementById("statusDot");
+      const moodBtn = document.getElementById("moodCycleBtn");
+      const hintGroup = document.getElementById("pullHintGroup");
+
+      if (isLampOn) {
+        applyLampColor(colorIdx);
+        statusDot.classList.remove("bg-slate-600");
+        statusDot.classList.add("bg-emerald-500", "animate-pulse");
+        moodBtn.classList.remove("hidden");
+        hintGroup.style.opacity = "0";
+        setTimeout(() => {
+          const emailInput = document.getElementById("loginEmail");
+          if (emailInput && !document.getElementById("loginView").classList.contains("hidden")) {
+            emailInput.focus();
+          }
+        }, 350);
+      } else {
+        document.documentElement.style.setProperty("--wall-light", "rgba(255,255,255,0.015)");
+        statusDot.classList.remove("bg-emerald-500", "animate-pulse");
+        statusDot.classList.add("bg-slate-600");
+        moodBtn.classList.add("hidden");
+        hintGroup.style.opacity = "1";
+      }
+
+      playLampSound(isLampOn);
+    }
+
+    function cycleLampColor() {
+      if (!isLampOn) {
+        setLampState(true);
+        return;
+      }
+      colorIdx = (colorIdx + 1) % LAMP_COLORS.length;
+      applyLampColor(colorIdx);
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById("soundToggleBtn").innerText = soundEnabled ? "Sound: On" : "Sound: Off";
+    }
+
+    // Spring-animated Pull-Chain Drag & Click Physics
+    (function initPullChain() {
+      const hitArea = document.getElementById("pullChainHit");
+      const cord = document.getElementById("chainCord");
+      const bead = document.getElementById("chainBead");
+
+      const baseY = 224;
+      let currentY = baseY;
+      let velocity = 0;
+      let isDragging = false;
+      let startPointerY = 0;
+      let toggledDuringDrag = false;
+      let animFrame = null;
+
+      function renderChain(y) {
+        cord.setAttribute("y2", y);
+        bead.setAttribute("cy", y + 3);
+      }
+
+      function springBack() {
+        const stiffness = 0.24;
+        const damping = 0.72;
+        const force = (baseY - currentY) * stiffness;
+        velocity = (velocity + force) * damping;
+        currentY += velocity;
+        renderChain(currentY);
+
+        if (Math.abs(baseY - currentY) > 0.2 || Math.abs(velocity) > 0.2) {
+          animFrame = requestAnimationFrame(springBack);
+        } else {
+          currentY = baseY;
+          velocity = 0;
+          renderChain(baseY);
+        }
+      }
+
+      function triggerPullBounce() {
+        cancelAnimationFrame(animFrame);
+        currentY = baseY + 26;
+        velocity = 0;
+        renderChain(currentY);
+        setLampState(!isLampOn);
+        animFrame = requestAnimationFrame(springBack);
+      }
+
+      hitArea.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        cancelAnimationFrame(animFrame);
+        isDragging = true;
+        toggledDuringDrag = false;
+        startPointerY = e.clientY;
+        hitArea.setPointerCapture(e.pointerId);
       });
-    }
 
-    function toggleLamp(force) {
-      const next = typeof force === 'boolean' ? force : !lightsOn;
-      if (next === lightsOn) return;
-      lightsOn = next;
-      document.body.classList.toggle('lights-off', !lightsOn);
-      document.getElementById('lampSwitch').setAttribute('aria-label', lightsOn ? 'Turn lamp off' : 'Turn lamp on');
-      const intensity = lightsOn ? 34 : 0;
-      const pointIntensity = lightsOn ? 3.2 : 0;
-      const emissive = lightsOn ? 2.4 : 0;
-      const poolOpacity = lightsOn ? .18 : 0;
-      if (window.gsap) {
-        window.gsap.to(spot, { intensity, duration: lightsOn ? .95 : .55, ease: 'power2.out' });
-        window.gsap.to(glow, { intensity: pointIntensity, duration: .7, ease: 'power2.out' });
-        window.gsap.to(bulbMat, { emissiveIntensity: emissive, duration: .35 });
-        window.gsap.to(pool.material, { opacity: poolOpacity, duration: .9 });
-        window.gsap.to(keyLight, { intensity: lightsOn ? 1.15 : .48, duration: .8 });
-        window.gsap.to(lampGroup.rotation, { y: lightsOn ? -.035 : 0, duration: .7, ease: 'power2.out' });
-      } else {
-        spot.intensity = intensity; glow.intensity = pointIntensity; bulbMat.emissiveIntensity = emissive; pool.material.opacity = poolOpacity;
+      hitArea.addEventListener("pointermove", (e) => {
+        if (!isDragging) return;
+        const delta = Math.max(0, Math.min(42, e.clientY - startPointerY));
+        currentY = baseY + delta;
+        renderChain(currentY);
+
+        if (delta >= 22 && !toggledDuringDrag) {
+          toggledDuringDrag = true;
+          setLampState(!isLampOn);
+        }
+      });
+
+      function endDrag(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        const moved = Math.abs(e.clientY - startPointerY);
+        if (!toggledDuringDrag && moved < 8) {
+          triggerPullBounce();
+        } else {
+          animFrame = requestAnimationFrame(springBack);
+        }
       }
-      document.getElementById('switchIcon').style.opacity = lightsOn ? '1' : '.62';
-    }
 
-    document.getElementById('lampSwitch').addEventListener('click', () => toggleLamp());
-    document.querySelectorAll('.theme-swatch').forEach(btn => btn.addEventListener('click', () => setTheme(btn.dataset.theme)));
-    setTheme('amber');
+      hitArea.addEventListener("pointerup", endDrag);
+      hitArea.addEventListener("pointercancel", endDrag);
+    })();
 
-    // Subtle movement and responsive framing
-    const pointer = { x: 0, y: 0 };
-    window.addEventListener('pointermove', e => {
-      pointer.x = (e.clientX / window.innerWidth - .5) * 2;
-      pointer.y = (e.clientY / window.innerHeight - .5) * 2;
-    }, { passive: true });
+    // View Navigation
+    function navigateTo(viewName) {
+      document.getElementById('loginView').classList.add('hidden');
+      document.getElementById('landingView').classList.add('hidden');
 
-    const clock = new THREE.Clock();
-    function animate() {
-      requestAnimationFrame(animate);
-      const t = clock.getElapsedTime();
-      lampGroup.rotation.y += ((pointer.x * .045) - lampGroup.rotation.y) * .018;
-      headPivot.rotation.z = -.48 + Math.sin(t * .55) * .012;
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    function resizeScene() {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.position.x = window.innerWidth < 850 ? 0 : 0;
-      camera.position.y = window.innerWidth < 850 ? 2.0 : 2.1;
-      camera.position.z = window.innerWidth < 520 ? 12.2 : (window.innerWidth < 850 ? 11.5 : 10.8);
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.7));
-      lampGroup.position.x = window.innerWidth < 850 ? -1.15 : -2.0;
-      lampGroup.scale.setScalar(window.innerWidth < 520 ? .78 : (window.innerWidth < 850 ? .9 : 1));
-    }
-    window.addEventListener('resize', resizeScene);
-    resizeScene();
-
-    // ---------------------------------------------------------------------
-    // UI animation and Supabase Auth
-    // ---------------------------------------------------------------------
-    const loginView = document.getElementById('loginView');
-    const landingView = document.getElementById('landingView');
-    const loginCard = document.getElementById('loginCard');
-    const landingCard = document.getElementById('landingCard');
-    const loginBtn = document.getElementById('loginBtn');
-    const loginError = document.getElementById('loginError');
-
-    function showView(view) {
-      if (view === 'landing') {
-        loginView.style.display = 'none';
-        landingView.style.display = 'block';
-        document.getElementById('headerTitle').textContent = 'Document Gateway';
-        window.gsap?.fromTo(landingCard, { autoAlpha: 0, y: 24, scale: .98 }, { autoAlpha: 1, y: 0, scale: 1, duration: .65, ease: 'power3.out' });
-      } else {
-        landingView.style.display = 'none';
-        loginView.style.display = 'block';
-        document.getElementById('headerTitle').textContent = 'Portal Authentication';
-        window.gsap?.fromTo(loginCard, { autoAlpha: 0, y: 24, scale: .98 }, { autoAlpha: 1, y: 0, scale: 1, duration: .75, ease: 'power3.out' });
-      }
-    }
-    function setUser(email) {
-      document.getElementById('landingUserEmail').textContent = email || 'User';
-      const badge = document.getElementById('userBadge');
-      badge.textContent = email || '';
-      badge.style.display = email ? 'inline-block' : 'none';
-      document.getElementById('logoutBtn').style.display = email ? 'inline-block' : 'none';
-    }
-    function introAnimation() {
-      if (window.gsap) {
-        window.gsap.set([loginCard, document.getElementById('visualCopy')], { autoAlpha: 0, y: 18 });
-        window.gsap.timeline({ delay: .35 })
-          .call(() => toggleLamp(true))
-          .to('#visualCopy', { autoAlpha: 1, y: 0, duration: .8, ease: 'power3.out' }, .35)
-          .to(loginCard, { autoAlpha: 1, y: 0, duration: .9, ease: 'power3.out' }, .65);
-      } else {
-        toggleLamp(true);
+      if (viewName === 'login') {
+        document.getElementById('loginView').classList.remove('hidden');
+        document.getElementById('headerTitle').innerText = 'Portal Authentication';
+        document.getElementById('userBadge').classList.add('hidden');
+        document.getElementById('logoutBtn').classList.add('hidden');
+      } else if (viewName === 'landing') {
+        document.getElementById('landingView').classList.remove('hidden');
+        document.getElementById('headerTitle').innerText = 'Document Gateway';
+        document.getElementById('moodCycleBtn').classList.add('hidden');
       }
     }
 
-    document.getElementById('loginForm').addEventListener('submit', async (event) => {
-      event.preventDefault();
-      loginError.style.display = 'none';
-      loginBtn.disabled = true;
-      loginBtn.innerHTML = '<span>Authenticating…</span>';
+    // Supabase Auth Login
+    async function handleLogin(e) {
+      e.preventDefault();
       const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value;
+      const errorDiv = document.getElementById('loginError');
+      const loginBtn = document.getElementById('loginBtn');
+
+      errorDiv.classList.add('hidden');
+      loginBtn.disabled = true;
+      loginBtn.innerText = 'Authenticating...';
+
       try {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+          email: email,
+          password: password,
+        });
+
         if (error) throw error;
-        setUser(data.user?.email);
-        showView('landing');
-      } catch (error) {
-        loginError.textContent = error?.message || 'Unable to sign in. Please check your credentials.';
-        loginError.style.display = 'block';
-        window.gsap?.fromTo(loginError, { x: -5 }, { x: 0, duration: .25, ease: 'power2.out' });
+
+        const userEmail = data.user.email;
+        document.getElementById('landingUserEmail').innerText = userEmail;
+        document.getElementById('userBadge').innerText = userEmail;
+        document.getElementById('userBadge').classList.remove('hidden');
+        document.getElementById('logoutBtn').classList.remove('hidden');
+
+        navigateTo('landing');
+      } catch (err) {
+        errorDiv.innerText = err.message || 'Invalid login credentials.';
+        errorDiv.classList.remove('hidden');
       } finally {
         loginBtn.disabled = false;
-        loginBtn.innerHTML = '<span>Sign in</span><span aria-hidden="true">↗</span>';
-      }
-    });
-
-    document.getElementById('showPassword').addEventListener('click', () => {
-      const input = document.getElementById('loginPassword');
-      const show = input.type === 'password';
-      input.type = show ? 'text' : 'password';
-      document.getElementById('showPassword').textContent = show ? 'HIDE' : 'SHOW';
-    });
-
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      const { error } = await supabaseClient.auth.signOut();
-      if (error) console.error('Supabase sign out error:', error.message);
-      setUser('');
-      showView('login');
-      toggleLamp(true);
-    });
-
-    // Restore a valid Supabase session on refresh and listen for auth changes.
-    async function initializeAuth() {
-      try {
-        const { data, error } = await supabaseClient.auth.getSession();
-        if (error) throw error;
-        if (data.session?.user) {
-          setUser(data.session.user.email);
-          showView('landing');
-          toggleLamp(true);
-        } else {
-          setUser('');
-          showView('login');
-          introAnimation();
-        }
-      } catch (error) {
-        console.error('Session check failed:', error.message);
-        showView('login');
-        introAnimation();
+        loginBtn.innerHTML = 'Sign In &rarr;';
       }
     }
-    supabaseClient.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        setUser('');
-        showView('login');
-      } else if (event === 'SIGNED_IN' && session?.user) {
-        setUser(session.user.email);
+
+    async function handleLogout() {
+      await supabaseClient.auth.signOut();
+      navigateTo('login');
+      setLampState(true);
+    }
+
+    // Check active session on load
+    window.addEventListener('DOMContentLoaded', async () => {
+      applyLampColor(0);
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session && session.user) {
+        const userEmail = session.user.email;
+        document.getElementById('landingUserEmail').innerText = userEmail;
+        document.getElementById('userBadge').innerText = userEmail;
+        document.getElementById('userBadge').classList.remove('hidden');
+        document.getElementById('logoutBtn').classList.remove('hidden');
+        navigateTo('landing');
+      } else {
+        navigateTo('login');
       }
     });
-    initializeAuth();
-
-    // If the user turns the light off, keep the switch usable and the form readable.
-    // The UI remains visible; only the lamp's illumination and ambient glow change.
   </script>
 </body>
 </html>
