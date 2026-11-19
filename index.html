@@ -12,12 +12,13 @@
     :root {
       --accent: #f5b041;
       --accent-soft: rgba(245, 176, 65, 0.22);
-      --accent-glow: rgba(245, 176, 65, 0.35);
+      --accent-beam: rgba(245, 176, 65, 0.28);
+      --accent-card-sheen: rgba(245, 176, 65, 0.16);
       --accent-text: #111315;
     }
 
     body {
-      background-color: #111413;
+      background-color: #0e1110;
       color: #f8fafc;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       touch-action: manipulation;
@@ -27,8 +28,8 @@
     /* Room wall & floor surface */
     .room-stage {
       background:
-        radial-gradient(ellipse 70% 55% at 28% 46%, var(--wall-light, rgba(255,255,255,0.02)) 0%, transparent 70%),
-        linear-gradient(180deg, #161a18 0%, #101312 72%, #0b0d0c 100%);
+        radial-gradient(ellipse 65% 55% at 48% 48%, var(--wall-light, rgba(255,255,255,0.015)) 0%, transparent 72%),
+        linear-gradient(180deg, #141816 0%, #0e1110 74%, #090b0a 100%);
       transition: background 0.6s ease;
     }
 
@@ -49,14 +50,13 @@
     /* Login card hidden until lamp is turned on */
     .login-card-shell {
       opacity: 0;
-      transform: translateY(18px) scale(0.96);
+      transform: translateY(16px) scale(0.96);
       pointer-events: none;
       filter: blur(4px);
       transition:
         opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
         transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-        filter 0.45s ease,
-        box-shadow 0.6s ease;
+        filter 0.45s ease;
     }
 
     body.lamp-on .login-card-shell {
@@ -66,14 +66,43 @@
       filter: blur(0);
     }
 
+    /* Card illuminated directly by the lamp beam from the left */
     .glass-card {
-      background: linear-gradient(180deg, rgba(28, 30, 32, 0.94) 0%, rgba(20, 22, 24, 0.97) 100%);
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(32, 34, 36, 0.94) 0%, rgba(19, 21, 23, 0.98) 100%);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.08);
+      border-left: 1px solid rgba(255, 255, 255, 0.14);
       box-shadow:
-        0 25px 60px rgba(0, 0, 0, 0.75),
-        0 0 40px var(--accent-soft);
+        0 28px 65px rgba(0, 0, 0, 0.82),
+        -12px 0 45px var(--accent-soft);
+      transition: box-shadow 0.6s ease, border-color 0.6s ease;
+    }
+
+    body.lamp-on .glass-card {
+      border-left-color: var(--accent-beam);
+    }
+
+    /* Light wash hitting the card's left & center surface */
+    .glass-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        circle at -10% 35%,
+        var(--accent-card-sheen) 0%,
+        rgba(255, 255, 255, 0.03) 45%,
+        transparent 75%
+      );
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
+    }
+
+    body.lamp-on .glass-card::before {
+      opacity: 1;
     }
 
     .accent-btn {
@@ -141,39 +170,39 @@
   </header>
 
   <!-- ================= VIEW 1: LOGIN STAGE ================= -->
-  <section id="loginView" class="w-full max-w-5xl mx-auto my-auto z-10">
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-8 items-center">
+  <section id="loginView" class="w-full max-w-5xl mx-auto my-auto z-10 relative">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 items-center">
 
-      <!-- Realistic Articulated Desk Lamp with Pull Chain -->
-      <div class="md:col-span-6 flex flex-col items-center justify-center relative select-none">
-        <svg id="lampSvg" class="w-full max-w-[330px] sm:max-w-[370px] h-auto overflow-visible" viewBox="0 0 380 390" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Realistic Articulated Desk Lamp Aimed at the Login Card -->
+      <div class="md:col-span-6 flex flex-col items-center justify-center relative select-none z-10">
+        <svg id="lampSvg" class="w-full max-w-[350px] sm:max-w-[400px] h-auto overflow-visible" viewBox="0 0 420 390" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <!-- Metallic Shade Gradient -->
-            <linearGradient id="shadeMetal" x1="125" y1="55" x2="235" y2="155" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#3c4240" />
-              <stop offset="35%" stop-color="#232726" />
+            <linearGradient id="shadeMetal" x1="120" y1="60" x2="230" y2="165" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#434947" />
+              <stop offset="35%" stop-color="#252928" />
               <stop offset="85%" stop-color="#141716" />
-              <stop offset="100%" stop-color="#0d0f0e" />
+              <stop offset="100%" stop-color="#0c0e0d" />
             </linearGradient>
 
             <!-- Specular Rim Highlight on Shade -->
-            <linearGradient id="shadeRim" x1="130" y1="62" x2="220" y2="120" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="rgba(255,255,255,0.28)" />
-              <stop offset="50%" stop-color="rgba(255,255,255,0.04)" />
+            <linearGradient id="shadeRim" x1="125" y1="65" x2="215" y2="120" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.32)" />
+              <stop offset="55%" stop-color="rgba(255,255,255,0.05)" />
               <stop offset="100%" stop-color="rgba(255,255,255,0)" />
             </linearGradient>
 
             <!-- Inner Shade Reflector (tinted dynamically) -->
             <radialGradient id="innerReflector" cx="50%" cy="45%" r="55%">
-              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
-              <stop offset="45%" id="innerStopMid" stop-color="#f5b041" stop-opacity="0.85" />
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.98" />
+              <stop offset="45%" id="innerStopMid" stop-color="#f5b041" stop-opacity="0.90" />
               <stop offset="100%" id="innerStopEdge" stop-color="#78350f" stop-opacity="0.95" />
             </radialGradient>
 
             <!-- Metallic Arm Gradient -->
             <linearGradient id="armMetal" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stop-color="#181b1a" />
-              <stop offset="45%" stop-color="#3a403e" />
+              <stop offset="45%" stop-color="#3c4240" />
               <stop offset="100%" stop-color="#141615" />
             </linearGradient>
 
@@ -185,28 +214,28 @@
             </radialGradient>
 
             <!-- Weighted Base Gradient -->
-            <linearGradient id="baseMetal" x1="55" y1="322" x2="175" y2="352" gradientUnits="userSpaceOnUse">
+            <linearGradient id="baseMetal" x1="45" y1="322" x2="165" y2="352" gradientUnits="userSpaceOnUse">
               <stop offset="0%" stop-color="#343937" />
               <stop offset="50%" stop-color="#1e2221" />
               <stop offset="100%" stop-color="#0f1110" />
             </linearGradient>
 
-            <!-- Volumetric Spotlight Cone -->
-            <linearGradient id="beamGrad" x1="185" y1="130" x2="235" y2="355" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" id="beamStopTop" stop-color="#f5b041" stop-opacity="0.46" />
-              <stop offset="55%" id="beamStopMid" stop-color="#f5b041" stop-opacity="0.14" />
+            <!-- Angled Volumetric Spotlight Cone Aimed Right Toward Login Card -->
+            <linearGradient id="beamGrad" x1="185" y1="115" x2="520" y2="235" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" id="beamStopTop" stop-color="#f5b041" stop-opacity="0.52" />
+              <stop offset="48%" id="beamStopMid" stop-color="#f5b041" stop-opacity="0.20" />
               <stop offset="100%" id="beamStopBot" stop-color="#f5b041" stop-opacity="0" />
             </linearGradient>
 
             <!-- Desk Surface Light Pool -->
             <radialGradient id="floorPoolGrad" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" id="poolStopCenter" stop-color="#f5b041" stop-opacity="0.34" />
-              <stop offset="65%" id="poolStopMid" stop-color="#f5b041" stop-opacity="0.10" />
+              <stop offset="0%" id="poolStopCenter" stop-color="#f5b041" stop-opacity="0.26" />
+              <stop offset="65%" id="poolStopMid" stop-color="#f5b041" stop-opacity="0.08" />
               <stop offset="100%" stop-color="#f5b041" stop-opacity="0" />
             </radialGradient>
 
-            <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
-              <feGaussianBlur stdDeviation="8" result="blur" />
+            <filter id="softGlow" x="-45%" y="-45%" width="190%" height="190%">
+              <feGaussianBlur stdDeviation="9" result="blur" />
               <feMerge>
                 <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />
@@ -215,106 +244,109 @@
           </defs>
 
           <!-- Desk Contact Shadow -->
-          <ellipse cx="118" cy="348" rx="68" ry="11" fill="rgba(0,0,0,0.75)" />
+          <ellipse cx="105" cy="348" rx="68" ry="11" fill="rgba(0,0,0,0.78)" />
 
-          <!-- Floor Light Pool (visible when ON) -->
-          <ellipse cx="222" cy="346" rx="125" ry="22" fill="url(#floorPoolGrad)" class="floor-pool" />
+          <!-- Subtle Desk Light Spill -->
+          <ellipse cx="265" cy="348" rx="145" ry="20" fill="url(#floorPoolGrad)" class="floor-pool" />
 
-          <!-- Volumetric Light Beam Cone (visible when ON) -->
-          <polygon points="142,145 232,115 348,348 112,348" fill="url(#beamGrad)" class="lamp-beam" />
+          <!-- Angled Volumetric Light Beam Illuminating the Login Card on the Right -->
+          <polygon points="175,152 218,86 560,25 560,365" fill="url(#beamGrad)" class="lamp-beam" />
 
           <!-- Lamp Base -->
-          <ellipse cx="115" cy="341" rx="54" ry="10" fill="#0d0f0e" />
-          <path d="M62 338 C62 325, 168 325, 168 338 L168 343 C168 351, 62 351, 62 343 Z" fill="url(#baseMetal)" stroke="#3b413f" stroke-width="1" />
-          <ellipse cx="115" cy="331" rx="34" ry="6" fill="#2b302e" stroke="#484f4d" stroke-width="0.8" />
+          <ellipse cx="102" cy="341" rx="54" ry="10" fill="#0d0f0e" />
+          <path d="M49 338 C49 325, 155 325, 155 338 L155 343 C155 351, 49 351, 49 343 Z" fill="url(#baseMetal)" stroke="#3b413f" stroke-width="1" />
+          <ellipse cx="102" cy="331" rx="34" ry="6" fill="#2b302e" stroke="#484f4d" stroke-width="0.8" />
           <!-- Base Pivot Stem -->
-          <rect x="108" y="314" width="14" height="18" rx="4" fill="url(#armMetal)" />
-          <circle cx="115" cy="316" r="6" fill="url(#brassJoint)" />
+          <rect x="95" y="314" width="14" height="18" rx="4" fill="url(#armMetal)" />
+          <circle cx="102" cy="316" r="6" fill="url(#brassJoint)" />
 
           <!-- Lower Articulated Arm -->
-          <g transform="rotate(-19 115 316)">
-            <rect x="109" y="210" width="5" height="106" rx="2.5" fill="url(#armMetal)" />
-            <rect x="117" y="210" width="4" height="106" rx="2" fill="#232726" />
+          <g transform="rotate(-21 102 316)">
+            <rect x="96" y="210" width="5" height="106" rx="2.5" fill="url(#armMetal)" />
+            <rect x="104" y="210" width="4" height="106" rx="2" fill="#232726" />
             <!-- Tension Spring Detail -->
-            <line x1="115" y1="232" x2="115" y2="296" stroke="#8a6c2e" stroke-width="1.5" stroke-dasharray="2.5 2.5" />
+            <line x1="102" y1="232" x2="102" y2="296" stroke="#8a6c2e" stroke-width="1.5" stroke-dasharray="2.5 2.5" />
           </g>
 
           <!-- Elbow Joint -->
-          <circle cx="80" cy="216" r="10.5" fill="#181b1a" stroke="#434947" stroke-width="1.5" />
-          <circle cx="80" cy="216" r="6.5" fill="url(#brassJoint)" />
-          <circle cx="80" cy="216" r="2.2" fill="#2d2108" />
+          <circle cx="64" cy="217" r="10.5" fill="#181b1a" stroke="#434947" stroke-width="1.5" />
+          <circle cx="64" cy="217" r="6.5" fill="url(#brassJoint)" />
+          <circle cx="64" cy="217" r="2.2" fill="#2d2108" />
 
           <!-- Upper Articulated Arm -->
-          <g transform="rotate(42 80 216)">
-            <rect x="75" y="106" width="5" height="110" rx="2.5" fill="url(#armMetal)" />
-            <rect x="82" y="106" width="4" height="110" rx="2" fill="#242827" />
+          <g transform="rotate(38 64 217)">
+            <rect x="59" y="107" width="5" height="110" rx="2.5" fill="url(#armMetal)" />
+            <rect x="66" y="107" width="4" height="110" rx="2" fill="#242827" />
           </g>
 
           <!-- Neck Socket & Swivel -->
-          <circle cx="153" cy="134" r="7.5" fill="url(#brassJoint)" />
-          <path d="M148 128 L166 106 L176 114 L158 136 Z" fill="#232726" stroke="#454c4a" stroke-width="1" />
+          <circle cx="132" cy="130" r="7.5" fill="url(#brassJoint)" />
+          <path d="M128 124 L152 108 L160 118 L136 134 Z" fill="#232726" stroke="#454c4a" stroke-width="1" />
 
-          <!-- Inner Shade Opening & Bulb -->
-          <ellipse cx="187" cy="130" rx="47" ry="16" transform="rotate(-18 187 130)" fill="#161817" />
-          <ellipse cx="187" cy="130" rx="44" ry="14" transform="rotate(-18 187 130)" fill="url(#innerReflector)" class="bulb-glow" />
+          <!-- Lamp Head Group Tilted Toward the Login Card -->
+          <g transform="rotate(-26 175 122)">
+            <!-- Inner Shade Opening & Reflector -->
+            <ellipse cx="196" cy="118" rx="18" ry="48" fill="#161817" />
+            <ellipse cx="196" cy="118" rx="15" ry="45" fill="url(#innerReflector)" class="bulb-glow" />
 
-          <!-- Glowing Bulb Sphere -->
-          <circle id="lampBulb" cx="185" cy="126" r="13" fill="#2a2e2d" />
-          <circle id="lampBulbLit" cx="185" cy="126" r="13" fill="#fff7ed" filter="url(#softGlow)" class="bulb-glow" />
+            <!-- Glowing Bulb Sphere -->
+            <circle id="lampBulb" cx="192" cy="118" r="13.5" fill="#2a2e2d" />
+            <circle id="lampBulbLit" cx="192" cy="118" r="13.5" fill="#fffbeb" filter="url(#softGlow)" class="bulb-glow" />
 
-          <!-- Outer Bell Lamp Shade -->
-          <path d="M158 98 C166 72, 198 66, 212 86 L233 115 C208 132, 165 146, 141 144 Z"
-            fill="url(#shadeMetal)" stroke="#3e4442" stroke-width="1.2" />
-          <!-- Top Cap -->
-          <path d="M167 84 C174 70, 194 67, 202 78 L196 86 C188 80, 177 82, 172 90 Z"
-            fill="#171a19" stroke="#4d5552" stroke-width="1" />
-          <!-- Specular Highlight Arc -->
-          <path d="M163 102 C170 84, 192 78, 204 91" stroke="url(#shadeRim)" stroke-width="3" stroke-linecap="round" />
+            <!-- Outer Bell Lamp Shade -->
+            <path d="M150 96 C158 76, 184 70, 200 72 L198 164 C182 166, 158 160, 150 140 Z"
+              fill="url(#shadeMetal)" stroke="#3e4442" stroke-width="1.2" />
+            <!-- Rear Cap -->
+            <path d="M138 106 C138 94, 148 88, 154 94 L154 142 C148 148, 138 142, 138 130 Z"
+              fill="#171a19" stroke="#4d5552" stroke-width="1" />
+            <!-- Specular Highlight Arc -->
+            <path d="M156 96 C166 82, 182 78, 194 79" stroke="url(#shadeRim)" stroke-width="3" stroke-linecap="round" />
+          </g>
 
-          <!-- Interactive Pull-Chain Cord & Bead -->
+          <!-- Interactive Pull-Chain Cord & Bead (hangs vertically under the tilted shade) -->
           <g id="pullChainGroup">
             <!-- Cord line -->
-            <line id="chainCord" x1="162" y1="142" x2="162" y2="212" stroke="#9ca3af" stroke-width="1.6" stroke-dasharray="2 1.5" />
+            <line id="chainCord" x1="164" y1="154" x2="164" y2="224" stroke="#9ca3af" stroke-width="1.6" stroke-dasharray="2 1.5" />
             <!-- Brass/Silver Bead -->
-            <circle id="chainBead" cx="162" cy="215" r="4.8" fill="url(#brassJoint)" stroke="#fef3c7" stroke-width="0.7" />
+            <circle id="chainBead" cx="164" cy="227" r="4.8" fill="url(#brassJoint)" stroke="#fef3c7" stroke-width="0.7" />
             <!-- Invisible larger touch/drag hit area -->
-            <rect id="pullChainHit" x="142" y="140" width="40" height="95" fill="transparent" />
+            <rect id="pullChainHit" x="144" y="150" width="40" height="98" fill="transparent" />
           </g>
 
           <!-- Prompt Pill beside the Pull Chain -->
-          <g id="pullHintGroup" transform="translate(176, 194)" class="hint-badge pointer-events-none">
-            <rect x="0" y="0" width="108" height="22" rx="11" fill="rgba(22, 25, 24, 0.92)" stroke="rgba(255,255,255,0.14)" stroke-width="1" />
-            <text x="54" y="14.5" text-anchor="middle" fill="#d1d5db" font-size="10" font-family="system-ui, sans-serif">
+          <g id="pullHintGroup" transform="translate(178, 208)" class="hint-badge pointer-events-none">
+            <rect x="0" y="0" width="112" height="22" rx="11" fill="rgba(22, 25, 24, 0.92)" stroke="rgba(255,255,255,0.14)" stroke-width="1" />
+            <text x="56" y="14.5" text-anchor="middle" fill="#d1d5db" font-size="10" font-family="system-ui, sans-serif">
               ← Pull / click chain
             </text>
           </g>
         </svg>
       </div>
 
-      <!-- Login Card (Revealed when Lamp is Turned On) -->
-      <div class="md:col-span-6 w-full max-w-[390px] mx-auto login-card-shell" id="loginCardShell">
+      <!-- Login Card (Illuminated & Revealed when Lamp is Turned On) -->
+      <div class="md:col-span-6 w-full max-w-[395px] mx-auto login-card-shell z-20" id="loginCardShell">
         <div class="glass-card rounded-2xl p-6 sm:p-7 space-y-5">
           <!-- Top Mini Header -->
-          <div class="text-center space-y-1">
+          <div class="text-center space-y-1 relative z-10">
             <span class="text-[10px] font-bold tracking-[0.22em] uppercase text-slate-400">Your Space</span>
             <h2 class="text-2xl font-bold text-slate-100 tracking-tight">Welcome</h2>
             <p class="text-xs text-slate-400">Sign in to continue to Document Gateway</p>
           </div>
 
-          <form onsubmit="handleLogin(event)" class="space-y-4">
+          <form onsubmit="handleLogin(event)" class="space-y-4 relative z-10">
             <div>
               <label class="block text-[11px] font-medium text-slate-300 mb-1.5">Email Address</label>
               <input type="email" id="loginEmail" required placeholder="user@company.com"
-                class="accent-input w-full px-3.5 py-2.5 bg-black/45 border border-white/10 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-all">
+                class="accent-input w-full px-3.5 py-2.5 bg-black/50 border border-white/10 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-all">
             </div>
 
             <div>
               <div class="flex items-center justify-between mb-1.5">
                 <label class="block text-[11px] font-medium text-slate-300">Password</label>
-                <span class="text-[11px] accent-link opacity-80">Supabase Auth</span>
+                <span class="text-[11px] accent-link opacity-85">Supabase Auth</span>
               </div>
               <input type="password" id="loginPassword" required placeholder="••••••••"
-                class="accent-input w-full px-3.5 py-2.5 bg-black/45 border border-white/10 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-all">
+                class="accent-input w-full px-3.5 py-2.5 bg-black/50 border border-white/10 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-all">
             </div>
 
             <div id="loginError" class="hidden text-xs text-red-400 bg-red-950/50 border border-red-800/60 p-2.5 rounded-xl text-center"></div>
@@ -325,7 +357,7 @@
             </button>
           </form>
 
-          <div class="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
+          <div class="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400 relative z-10">
             <span>Pull lamp chain to toggle light</span>
             <button type="button" onclick="cycleLampColor()" class="accent-link hover:underline font-medium">
               Shift color
@@ -385,13 +417,13 @@
     const SUPABASE_ANON_KEY = "sb_publishable_-b5NQcuBhQk57Y-tXzDe_A_HR3Im8CH";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Lamp Color Palettes (matches video color sequence)
+    // Lamp Color Palettes
     const LAMP_COLORS = [
-      { name: "Warm Gold", hex: "#f5b041", deep: "#78350f", soft: "rgba(245, 176, 65, 0.22)", wall: "rgba(245, 176, 65, 0.14)", text: "#111315" },
-      { name: "Electric Cyan", hex: "#38bdf8", deep: "#0c4a6e", soft: "rgba(56, 189, 248, 0.22)", wall: "rgba(56, 189, 248, 0.14)", text: "#091118" },
-      { name: "Crimson Rose", hex: "#f43f5e", deep: "#881337", soft: "rgba(244, 63, 94, 0.24)", wall: "rgba(244, 63, 94, 0.14)", text: "#ffffff" },
-      { name: "Emerald Glow", hex: "#22c55e", deep: "#14532d", soft: "rgba(34, 197, 94, 0.22)", wall: "rgba(34, 197, 94, 0.14)", text: "#08140d" },
-      { name: "Daylight White", hex: "#e2e8f0", deep: "#475569", soft: "rgba(226, 232, 240, 0.20)", wall: "rgba(226, 232, 240, 0.12)", text: "#0f172a" }
+      { name: "Warm Gold", hex: "#f5b041", deep: "#78350f", soft: "rgba(245, 176, 65, 0.24)", beam: "rgba(245, 176, 65, 0.38)", sheen: "rgba(245, 176, 65, 0.17)", wall: "rgba(245, 176, 65, 0.15)", text: "#111315" },
+      { name: "Electric Cyan", hex: "#38bdf8", deep: "#0c4a6e", soft: "rgba(56, 189, 248, 0.24)", beam: "rgba(56, 189, 248, 0.38)", sheen: "rgba(56, 189, 248, 0.17)", wall: "rgba(56, 189, 248, 0.15)", text: "#091118" },
+      { name: "Crimson Rose", hex: "#f43f5e", deep: "#881337", soft: "rgba(244, 63, 94, 0.26)", beam: "rgba(244, 63, 94, 0.38)", sheen: "rgba(244, 63, 94, 0.17)", wall: "rgba(244, 63, 94, 0.15)", text: "#ffffff" },
+      { name: "Emerald Glow", hex: "#22c55e", deep: "#14532d", soft: "rgba(34, 197, 94, 0.24)", beam: "rgba(34, 197, 94, 0.38)", sheen: "rgba(34, 197, 94, 0.17)", wall: "rgba(34, 197, 94, 0.15)", text: "#08140d" },
+      { name: "Daylight White", hex: "#e2e8f0", deep: "#475569", soft: "rgba(226, 232, 240, 0.22)", beam: "rgba(226, 232, 240, 0.34)", sheen: "rgba(226, 232, 240, 0.15)", wall: "rgba(226, 232, 240, 0.13)", text: "#0f172a" }
     ];
 
     let isLampOn = false;
@@ -399,7 +431,6 @@
     let soundEnabled = true;
     let audioCtx = null;
 
-    // Web Audio API Switch Click + 120Hz Electrical Hum (from video code)
     function playLampSound(turningOn) {
       if (!soundEnabled) return;
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -443,6 +474,8 @@
       const root = document.documentElement;
       root.style.setProperty("--accent", c.hex);
       root.style.setProperty("--accent-soft", c.soft);
+      root.style.setProperty("--accent-beam", c.beam);
+      root.style.setProperty("--accent-card-sheen", c.sheen);
       root.style.setProperty("--accent-text", c.text);
       if (isLampOn) {
         root.style.setProperty("--wall-light", c.wall);
@@ -482,7 +515,7 @@
           }
         }, 350);
       } else {
-        document.documentElement.style.setProperty("--wall-light", "rgba(255,255,255,0.02)");
+        document.documentElement.style.setProperty("--wall-light", "rgba(255,255,255,0.015)");
         statusDot.classList.remove("bg-emerald-500", "animate-pulse");
         statusDot.classList.add("bg-slate-600");
         moodBtn.classList.add("hidden");
@@ -512,7 +545,7 @@
       const cord = document.getElementById("chainCord");
       const bead = document.getElementById("chainBead");
 
-      const baseY = 212;
+      const baseY = 224;
       let currentY = baseY;
       let velocity = 0;
       let isDragging = false;
@@ -577,7 +610,6 @@
         isDragging = false;
         const moved = Math.abs(e.clientY - startPointerY);
         if (!toggledDuringDrag && moved < 8) {
-          // Simple click/tap also pulls the chain smoothly
           triggerPullBounce();
         } else {
           animFrame = requestAnimationFrame(springBack);
