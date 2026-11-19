@@ -25,154 +25,171 @@
       touch-action: none;
     }
 
-    /* Multi-stage Caveman Shock Sequence (~6.8s loop) */
-    @keyframes leftArmReach {
-      0%, 15% {
-        transform: rotate(38deg);
+    /* Frame-timed 7s sequence matching the video */
+    @keyframes vidLeftArmSwing {
+      0%, 14% {
+        transform: rotate(34deg);
       }
-      45%, 56% {
-        transform: rotate(-16deg);
+      42%, 52% {
+        transform: rotate(-18deg);
       }
-      62% {
-        transform: rotate(-38deg);
+      56% {
+        transform: rotate(-36deg);
       }
-      85%, 100% {
-        transform: rotate(38deg);
-      }
-    }
-
-    @keyframes leftWireSwing {
-      0%, 15% {
-        d: path("M 10 38 Q 62 32 95 72");
-      }
-      45%, 56% {
-        d: path("M 10 38 Q 78 68 134 94");
-      }
-      62% {
-        d: path("M 10 38 Q 65 45 105 62");
-      }
-      85%, 100% {
-        d: path("M 10 38 Q 62 32 95 72");
+      84%, 100% {
+        transform: rotate(34deg);
       }
     }
 
-    @keyframes cavemanBodyCycle {
-      0%, 50% {
-        transform: translate(0px, 0px) rotate(0deg);
+    @keyframes vidLeftWirePath {
+      0%, 14% {
+        d: path("M 14 36 Q 66 28 104 72");
       }
-      54% {
-        transform: translate(-4px, -2px) rotate(-2deg);
+      42%, 52% {
+        d: path("M 14 36 Q 82 68 144 96");
+      }
+      56% {
+        d: path("M 14 36 Q 68 48 112 64");
+      }
+      84%, 100% {
+        d: path("M 14 36 Q 66 28 104 72");
+      }
+    }
+
+    @keyframes vidRightWirePath {
+      0%, 54% {
+        d: path("M 346 36 Q 276 52 214 106");
       }
       58% {
-        transform: translate(4px, 2px) rotate(2deg);
+        d: path("M 346 36 Q 290 66 244 86");
       }
-      62% {
-        transform: translate(-4px, -1px) rotate(-2deg);
+      84%, 100% {
+        d: path("M 346 36 Q 276 52 214 106");
       }
-      66% {
-        transform: translate(3px, 1px) rotate(1.5deg);
+    }
+
+    @keyframes vidCavemanMotion {
+      0%, 53% {
+        transform: translate(0px, 0px) rotate(0deg);
       }
-      72% {
-        transform: translate(0px, -22px) rotate(0deg);
+      56% {
+        transform: translate(-5px, -2px) rotate(-2.5deg);
       }
-      78% {
-        transform: translate(0px, -25px) rotate(0deg);
+      60% {
+        transform: translate(5px, 2px) rotate(2.5deg);
       }
-      86% {
-        transform: translate(0px, 3px) rotate(0deg);
+      64% {
+        transform: translate(-5px, -1px) rotate(-2deg);
       }
-      90%, 100% {
+      68% {
+        transform: translate(4px, 1px) rotate(1.5deg);
+      }
+      74% {
+        transform: translate(0px, -24px) rotate(0deg);
+      }
+      80% {
+        transform: translate(0px, -26px) rotate(0deg);
+      }
+      88% {
+        transform: translate(0px, 2px) rotate(0deg);
+      }
+      92%, 100% {
         transform: translate(0px, 0px) rotate(0deg);
       }
     }
 
-    @keyframes electricArcFlash {
-      0%, 51% {
+    @keyframes vidSparkBurst {
+      0%, 54% {
+        opacity: 0;
+        transform: scale(0.7);
+      }
+      57% {
+        opacity: 1;
+        transform: scale(1.08);
+      }
+      62% {
+        opacity: 0.65;
+        transform: scale(0.95);
+      }
+      66% {
+        opacity: 1;
+        transform: scale(1.2);
+      }
+      74% {
+        opacity: 0.85;
+        transform: scale(1.28);
+      }
+      80%, 100% {
         opacity: 0;
         transform: scale(0.75);
       }
-      54% {
-        opacity: 1;
-        transform: scale(1.06);
-      }
-      59% {
-        opacity: 0.55;
-        transform: scale(0.96);
-      }
-      63% {
-        opacity: 1;
-        transform: scale(1.16);
-      }
-      70% {
-        opacity: 0.7;
-        transform: scale(1.26);
-      }
-      76%, 100% {
-        opacity: 0;
-        transform: scale(0.8);
-      }
     }
 
-    @keyframes shockArmsFlung {
-      0%, 67% {
-        opacity: 0;
-      }
-      70%, 82% {
+    @keyframes vidArmsReaching {
+      0%, 70% {
         opacity: 1;
       }
-      86%, 100% {
+      73%, 84% {
         opacity: 0;
       }
-    }
-
-    @keyframes normalArmsVisible {
-      0%, 67% {
-        opacity: 1;
-      }
-      70%, 82% {
-        opacity: 0;
-      }
-      86%, 100% {
+      88%, 100% {
         opacity: 1;
       }
     }
 
-    .anim-left-arm {
+    @keyframes vidArmsFlung {
+      0%, 70% {
+        opacity: 0;
+      }
+      73%, 84% {
+        opacity: 1;
+      }
+      88%, 100% {
+        opacity: 0;
+      }
+    }
+
+    .vid-left-arm {
       transform-box: fill-box;
-      transform-origin: 90% 20%;
-      animation: leftArmReach 6.8s ease-in-out infinite;
+      transform-origin: 92% 20%;
+      animation: vidLeftArmSwing 7s ease-in-out infinite;
     }
 
-    .anim-left-wire {
-      animation: leftWireSwing 6.8s ease-in-out infinite;
+    .vid-left-wire {
+      animation: vidLeftWirePath 7s ease-in-out infinite;
     }
 
-    .anim-caveman-body {
+    .vid-right-wire {
+      animation: vidRightWirePath 7s ease-in-out infinite;
+    }
+
+    .vid-caveman-body {
       transform-box: fill-box;
       transform-origin: 50% 85%;
-      animation: cavemanBodyCycle 6.8s ease-in-out infinite;
+      animation: vidCavemanMotion 7s ease-in-out infinite;
     }
 
-    .anim-spark-flash {
+    .vid-spark-burst {
       transform-box: fill-box;
       transform-origin: 50% 50%;
-      animation: electricArcFlash 6.8s ease-out infinite;
+      animation: vidSparkBurst 7s ease-out infinite;
     }
 
-    .anim-arms-flung {
-      animation: shockArmsFlung 6.8s ease-in-out infinite;
+    .vid-arms-reaching {
+      animation: vidArmsReaching 7s ease-in-out infinite;
     }
 
-    .anim-arms-normal {
-      animation: normalArmsVisible 6.8s ease-in-out infinite;
+    .vid-arms-flung {
+      animation: vidArmsFlung 7s ease-in-out infinite;
     }
 
-    .replay-sequence .anim-left-arm,
-    .replay-sequence .anim-left-wire,
-    .replay-sequence .anim-caveman-body,
-    .replay-sequence .anim-spark-flash,
-    .replay-sequence .anim-arms-flung,
-    .replay-sequence .anim-arms-normal {
+    .replay-sequence .vid-left-arm,
+    .replay-sequence .vid-left-wire,
+    .replay-sequence .vid-right-wire,
+    .replay-sequence .vid-caveman-body,
+    .replay-sequence .vid-spark-burst,
+    .replay-sequence .vid-arms-reaching,
+    .replay-sequence .vid-arms-flung {
       animation: none !important;
     }
   </style>
@@ -197,35 +214,35 @@
       <div class="p-6 text-center space-y-2.5">
         <h2 class="text-4xl font-black tracking-tight text-slate-900">401</h2>
 
-        <!-- Multi-Stage Caveman Cable Grab & Shock Scene -->
+        <!-- Caveman Cable Grab & Shock Scene -->
         <div id="cavemanSceneWrapper" class="w-full max-w-[340px] mx-auto py-1">
           <svg viewBox="0 0 360 185" class="w-full h-auto overflow-visible" xmlns="http://www.w3.org/2000/svg">
-            <!-- Soft Ground Shadow & Grass Tufts -->
-            <ellipse cx="180" cy="162" rx="135" ry="7" fill="#e2e8f0" />
-            <path d="M28 162 Q33 151 38 162 Q43 153 47 162" fill="#86efac" />
-            <path d="M312 162 Q317 152 322 162 Q327 154 331 162" fill="#86efac" />
+            <!-- Ground Shadow & Cave Props -->
+            <ellipse cx="180" cy="162" rx="140" ry="7" fill="#e2e8f0" />
+            <path d="M24 162 Q29 150 34 162 Q39 152 44 162" fill="#86efac" />
+            <path d="M316 162 Q321 151 326 162 Q331 153 336 162" fill="#86efac" />
 
-            <!-- Left Cave Stone Pillar -->
+            <!-- Left Stone Pillar -->
             <path d="M52 162 L58 96 L84 96 L90 162 Z" fill="#cbd5e1" />
             <rect x="55" y="92" width="32" height="7" rx="3" fill="#94a3b8" />
 
-            <!-- Right Cave Boulder -->
+            <!-- Right Stone Boulder -->
             <path d="M246 162 C244 128, 266 104, 294 106 C318 108, 328 134, 324 162 Z" fill="#cbd5e1" />
 
-            <!-- Right Cable Held by Caveman -->
-            <path d="M342 42 Q272 52 204 106" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round" />
+            <!-- Right Cable -->
+            <path class="vid-right-wire" d="M346 36 Q 276 52 214 106" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round" />
 
             <!-- Left Swinging Cable -->
-            <path class="anim-left-wire" d="M18 42 Q75 36 112 80" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round" />
+            <path class="vid-left-wire" d="M14 36 Q 66 28 104 72" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round" />
 
-            <!-- Animated Caveman Body -->
-            <g class="anim-caveman-body">
-              <!-- Electric Arc & Spark Burst -->
-              <g class="anim-spark-flash">
-                <polygon points="180,14 190,42 220,32 202,58 232,70 202,82 216,110 188,92 174,122 166,90 136,102 156,76 130,62 160,52 150,24 174,40"
+            <!-- Caveman Character -->
+            <g class="vid-caveman-body">
+              <!-- Electric Spark Burst -->
+              <g class="vid-spark-burst">
+                <polygon points="180,10 191,40 222,30 203,57 234,70 203,83 218,112 188,93 174,124 166,91 135,103 156,76 128,62 159,51 149,22 174,39"
                   fill="#facc15" stroke="#f97316" stroke-width="2.5" stroke-linejoin="round" />
-                <path d="M126 102 L144 95 L138 112" stroke="#fde047" stroke-width="3" stroke-linecap="round" fill="none" />
-                <path d="M234 72 L214 78 L222 92" stroke="#fde047" stroke-width="3" stroke-linecap="round" fill="none" />
+                <path d="M122 104 L143 96 L136 114" stroke="#fde047" stroke-width="3" stroke-linecap="round" fill="none" />
+                <path d="M238 72 L216 79 L225 94" stroke="#fde047" stroke-width="3" stroke-linecap="round" fill="none" />
               </g>
 
               <!-- Legs -->
@@ -236,32 +253,27 @@
 
               <!-- Caveman Tunic -->
               <path d="M158 84 L202 84 L210 132 L150 132 Z" fill="#f59e0b" stroke="#b45309" stroke-width="1.5" />
-              <!-- Tunic Hem Zigzag -->
               <path d="M150 132 L160 125 L170 132 L180 125 L190 132 L200 125 L210 132" fill="#f59e0b" />
 
-              <!-- Normal Arms (Reaching to Left Wire & Holding Right Wire) -->
-              <g class="anim-arms-normal">
-                <!-- Right arm holding cable -->
-                <path d="M202 94 L206 106" stroke="#eab08a" stroke-width="8" stroke-linecap="round" />
-                <!-- Swinging left arm -->
-                <g class="anim-left-arm">
+              <!-- Arms Reaching to Cables -->
+              <g class="vid-arms-reaching">
+                <path d="M202 94 L214 106" stroke="#eab08a" stroke-width="8" stroke-linecap="round" />
+                <g class="vid-left-arm">
                   <path d="M158 94 L126 84" stroke="#eab08a" stroke-width="8" stroke-linecap="round" />
                   <circle cx="124" cy="83" r="4.5" fill="#f3be9b" />
                 </g>
               </g>
 
-              <!-- Flung-Out Shock Arms (During Upward Hop) -->
-              <g class="anim-arms-flung" opacity="0">
-                <path d="M158 92 L124 72" stroke="#eab08a" stroke-width="8" stroke-linecap="round" />
-                <path d="M202 92 L236 72" stroke="#eab08a" stroke-width="8" stroke-linecap="round" />
+              <!-- Arms Flung Out During Shock Hop -->
+              <g class="vid-arms-flung" opacity="0">
+                <path d="M158 92 L122 70" stroke="#eab08a" stroke-width="8" stroke-linecap="round" />
+                <path d="M202 92 L238 70" stroke="#eab08a" stroke-width="8" stroke-linecap="round" />
               </g>
 
               <!-- Head, Wild Hair & Beard -->
               <circle cx="180" cy="60" r="18" fill="#f3be9b" />
               <path d="M160 54 L154 36 L168 44 L175 28 L184 44 L196 32 L198 48 L208 43 L199 58 Z" fill="#451a03" />
-              <!-- Beard -->
               <path d="M164 64 C164 80, 196 80, 196 64 C192 73, 168 73, 164 64 Z" fill="#451a03" />
-              <!-- Eyes & Shocked Mouth -->
               <circle cx="174" cy="58" r="2.8" fill="#0f172a" />
               <circle cx="186" cy="58" r="2.8" fill="#0f172a" />
               <ellipse cx="180" cy="67" rx="4" ry="4.5" fill="#7f1d1d" />
@@ -270,7 +282,7 @@
         </div>
 
         <h3 class="text-xl font-bold text-slate-900">Look like you're lost</h3>
-        <p class="text-xs text-slate-600 max-w-xs mx-auto">
+        <p id="guardReasonText" class="text-xs text-slate-600 max-w-xs mx-auto">
           Authentication is required before accessing the Document Receiving Proof Pad.
         </p>
 
@@ -435,9 +447,70 @@
     const SUPABASE_ANON_KEY = "sb_publishable_-b5NQcuBhQk57Y-tXzDe_A_HR3Im8CH";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // 20-Minute Inactivity Timeout (20 * 60 * 1000 ms)
+    const IDLE_TIMEOUT_MS = 20 * 60 * 1000;
+    const LAST_ACTIVITY_KEY = "gateway_last_activity_at";
+
     let loggedInUserEmail = null;
     let currentActiveDocNo = null;
     let isAuthorized = false;
+    let idleCheckInterval = null;
+
+    function recordUserActivity() {
+      if (!isAuthorized) return;
+      localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+    }
+
+    function hasExceededIdleTimeout() {
+      const lastRaw = localStorage.getItem(LAST_ACTIVITY_KEY);
+      if (!lastRaw) return false;
+      const lastTs = Number(lastRaw);
+      if (!Number.isFinite(lastTs)) return false;
+      return (Date.now() - lastTs) >= IDLE_TIMEOUT_MS;
+    }
+
+    async function performAutoLogoutDueToInactivity() {
+      stopIdleWatcher();
+      localStorage.removeItem(LAST_ACTIVITY_KEY);
+      try {
+        await supabaseClient.auth.signOut();
+      } catch (e) {
+        console.warn("Auto-logout signOut warning:", e);
+      }
+      showAuthGuard("You were automatically logged out after 20 minutes of inactivity.");
+    }
+
+    function startIdleWatcher() {
+      stopIdleWatcher();
+      if (!localStorage.getItem(LAST_ACTIVITY_KEY)) {
+        localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+      }
+      idleCheckInterval = setInterval(async () => {
+        if (!isAuthorized) return;
+        if (hasExceededIdleTimeout()) {
+          await performAutoLogoutDueToInactivity();
+        }
+      }, 15000);
+    }
+
+    function stopIdleWatcher() {
+      if (idleCheckInterval) {
+        clearInterval(idleCheckInterval);
+        idleCheckInterval = null;
+      }
+    }
+
+    ["pointerdown", "keydown", "mousemove", "touchstart", "scroll"].forEach((evtName) => {
+      window.addEventListener(evtName, recordUserActivity, { passive: true });
+    });
+
+    document.addEventListener("visibilitychange", async () => {
+      if (document.visibilityState === "visible" && isAuthorized) {
+        if (hasExceededIdleTimeout()) {
+          await performAutoLogoutDueToInactivity();
+        }
+      }
+    });
 
     function replayCavemanShock() {
       const wrapper = document.getElementById("cavemanSceneWrapper");
@@ -447,27 +520,31 @@
       wrapper.classList.remove("replay-sequence");
     }
 
-    function showAuthGuard() {
+    function showAuthGuard(reasonMessage = "Authentication is required before accessing the Document Receiving Proof Pad.") {
       isAuthorized = false;
       loggedInUserEmail = null;
-      document.getElementById('protectedMain').classList.add('hidden');
-      document.getElementById('authGuardView').classList.remove('hidden');
-      document.getElementById('backGatewayBtn').classList.add('hidden');
-      document.getElementById('headerDot').className = 'w-3 h-3 bg-amber-500 rounded-full animate-pulse';
-      document.getElementById('authSenderBadge').innerText = 'Unauthorized';
-      document.getElementById('authSenderBadge').className = 'text-[10px] px-2.5 py-1 rounded-full bg-red-950/80 text-red-400 border border-red-800/60 font-mono';
+      stopIdleWatcher();
+      document.getElementById("guardReasonText").innerText = reasonMessage;
+      document.getElementById("protectedMain").classList.add("hidden");
+      document.getElementById("authGuardView").classList.remove("hidden");
+      document.getElementById("backGatewayBtn").classList.add("hidden");
+      document.getElementById("headerDot").className = "w-3 h-3 bg-amber-500 rounded-full animate-pulse";
+      document.getElementById("authSenderBadge").innerText = "Unauthorized";
+      document.getElementById("authSenderBadge").className = "text-[10px] px-2.5 py-1 rounded-full bg-red-950/80 text-red-400 border border-red-800/60 font-mono";
       replayCavemanShock();
     }
 
     function showProtectedPad(email) {
       isAuthorized = true;
       loggedInUserEmail = email;
-      document.getElementById('authGuardView').classList.add('hidden');
-      document.getElementById('protectedMain').classList.remove('hidden');
-      document.getElementById('backGatewayBtn').classList.remove('hidden');
-      document.getElementById('headerDot').className = 'w-3 h-3 bg-emerald-500 rounded-full animate-pulse';
-      document.getElementById('authSenderBadge').innerText = `Sender: ${email}`;
-      document.getElementById('authSenderBadge').className = 'text-[10px] px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-mono';
+      document.getElementById("authGuardView").classList.add("hidden");
+      document.getElementById("protectedMain").classList.remove("hidden");
+      document.getElementById("backGatewayBtn").classList.remove("hidden");
+      document.getElementById("headerDot").className = "w-3 h-3 bg-emerald-500 rounded-full animate-pulse";
+      document.getElementById("authSenderBadge").innerText = `Sender: ${email}`;
+      document.getElementById("authSenderBadge").className = "text-[10px] px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-mono";
+      recordUserActivity();
+      startIdleWatcher();
       resizeCanvas();
     }
 
@@ -478,22 +555,30 @@
           showAuthGuard();
           return null;
         }
+        if (hasExceededIdleTimeout()) {
+          await performAutoLogoutDueToInactivity();
+          return null;
+        }
         showProtectedPad(session.user.email);
         return session.user;
       } catch (err) {
-        console.warn('Session check error:', err);
+        console.warn("Session check error:", err);
         showAuthGuard();
         return null;
       }
     }
 
-    window.addEventListener('DOMContentLoaded', async () => {
+    window.addEventListener("DOMContentLoaded", async () => {
       loadDepartments();
       await enforceSession();
     });
 
     supabaseClient.auth.onAuthStateChange((_event, session) => {
       if (session && session.user && session.user.email) {
+        if (hasExceededIdleTimeout()) {
+          performAutoLogoutDueToInactivity();
+          return;
+        }
         showProtectedPad(session.user.email);
       } else {
         showAuthGuard();
@@ -504,6 +589,7 @@
     async function lookupDocument() {
       const user = await enforceSession();
       if (!user || !isAuthorized) return;
+      recordUserActivity();
 
       const query = document.getElementById('searchQuery').value.trim();
       const resultDiv = document.getElementById('lookupResult');
@@ -633,6 +719,7 @@
 
     function startDraw(e) {
       if (!isAuthorized) return;
+      recordUserActivity();
       e.preventDefault();
       isDrawing = true;
       const pos = getEventPos(e);
@@ -661,6 +748,7 @@
     function stopDraw(e) {
       if (!isDrawing) return;
       isDrawing = false;
+      recordUserActivity();
     }
 
     canvas.addEventListener('mousedown', startDraw);
@@ -696,6 +784,7 @@
     async function confirmAndViewProof() {
       const user = await enforceSession();
       if (!user || !isAuthorized) return;
+      recordUserActivity();
 
       const docTitle = document.getElementById('docTitle').value.trim();
       const receivedBy = document.getElementById('receivedBy').value.trim();
