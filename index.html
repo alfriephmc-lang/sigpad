@@ -10,150 +10,327 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
-      --lamp-glow: rgba(245, 158, 11, 0.22);
-      --lamp-shade: #f59e0b;
-      --accent-btn: #d97706;
-      --accent-btn-hover: #f59e0b;
+      --accent: #f5b041;
+      --accent-soft: rgba(245, 176, 65, 0.22);
+      --accent-glow: rgba(245, 176, 65, 0.35);
+      --accent-text: #111315;
     }
 
     body {
-      background-color: #0b0f14;
+      background-color: #111413;
       color: #f8fafc;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       touch-action: manipulation;
       overflow-x: hidden;
     }
 
-    /* Ambient lighting backdrop that shifts with lamp state */
-    .ambient-bg {
+    /* Room wall & floor surface */
+    .room-stage {
       background:
-        radial-gradient(circle at 22% 38%, var(--lamp-glow), transparent 48%),
-        radial-gradient(circle at 78% 55%, rgba(16, 185, 129, 0.08), transparent 52%),
-        #0b0f14;
-      transition: background 0.9s ease;
+        radial-gradient(ellipse 70% 55% at 28% 46%, var(--wall-light, rgba(255,255,255,0.02)) 0%, transparent 70%),
+        linear-gradient(180deg, #161a18 0%, #101312 72%, #0b0d0c 100%);
+      transition: background 0.6s ease;
+    }
+
+    /* Lamp cast spotlight cone & floor pool */
+    .lamp-beam,
+    .floor-pool,
+    .bulb-glow {
+      opacity: 0;
+      transition: opacity 0.45s ease, fill 0.6s ease;
+    }
+
+    body.lamp-on .lamp-beam,
+    body.lamp-on .floor-pool,
+    body.lamp-on .bulb-glow {
+      opacity: 1;
+    }
+
+    /* Login card hidden until lamp is turned on */
+    .login-card-shell {
+      opacity: 0;
+      transform: translateY(18px) scale(0.96);
+      pointer-events: none;
+      filter: blur(4px);
+      transition:
+        opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        filter 0.45s ease,
+        box-shadow 0.6s ease;
+    }
+
+    body.lamp-on .login-card-shell {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+      filter: blur(0);
     }
 
     .glass-card {
-      background: rgba(20, 25, 33, 0.86);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
+      background: linear-gradient(180deg, rgba(28, 30, 32, 0.94) 0%, rgba(20, 22, 24, 0.97) 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow:
+        0 25px 60px rgba(0, 0, 0, 0.75),
+        0 0 40px var(--accent-soft);
     }
 
-    @keyframes cardSlideIn {
-      from {
-        opacity: 0;
-        transform: translateY(14px) scale(0.985);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
+    .accent-btn {
+      background-color: var(--accent);
+      color: var(--accent-text);
+      box-shadow: 0 8px 24px var(--accent-soft);
+      transition: background-color 0.5s ease, transform 0.15s ease, box-shadow 0.5s ease;
     }
 
-    .animate-card-in {
-      animation: cardSlideIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    .accent-btn:hover {
+      filter: brightness(1.07);
     }
 
-    .lamp-shade-light {
-      fill: var(--lamp-shade);
-      filter: drop-shadow(0 0 14px var(--lamp-glow));
-      transition: fill 0.8s ease, filter 0.8s ease;
+    .accent-link {
+      color: var(--accent);
+      transition: color 0.5s ease;
     }
 
-    .lamp-cone {
-      fill: var(--lamp-glow);
-      transition: fill 0.8s ease;
+    .accent-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-soft);
+    }
+
+    /* Pull chain interaction */
+    #pullChainHit {
+      cursor: grab;
+      touch-action: none;
+    }
+    #pullChainHit:active {
+      cursor: grabbing;
+    }
+
+    @keyframes floatHint {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(4px); }
+    }
+    .hint-badge {
+      animation: floatHint 2.2s ease-in-out infinite;
     }
   </style>
 </head>
-<body class="ambient-bg min-h-screen flex flex-col justify-between p-3 sm:p-6">
+<body class="room-stage min-h-screen flex flex-col justify-between p-3 sm:p-6">
 
   <!-- Header -->
-  <header class="w-full max-w-4xl mx-auto mb-4 flex items-center justify-between z-10">
+  <header class="w-full max-w-5xl mx-auto mb-2 flex items-center justify-between z-20">
     <div class="flex items-center space-x-2">
-      <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
-      <h1 class="text-sm sm:text-base font-bold tracking-tight text-slate-100" id="headerTitle">Portal Authentication</h1>
+      <div id="statusDot" class="w-2.5 h-2.5 bg-slate-600 rounded-full transition-colors duration-500"></div>
+      <h1 class="text-sm sm:text-base font-bold tracking-tight text-slate-200" id="headerTitle">Portal Authentication</h1>
     </div>
-    <div class="flex items-center space-x-3">
+    <div class="flex items-center space-x-2.5">
+      <!-- Mood swatch button (visible when lamp is on) -->
+      <button type="button" id="moodCycleBtn" onclick="cycleLampColor()"
+        class="hidden text-[11px] px-2.5 py-1 rounded-full bg-black/50 text-slate-200 border border-white/10 hover:border-white/25 transition flex items-center space-x-1.5">
+        <span id="moodDot" class="w-2 h-2 rounded-full" style="background:#f5b041;"></span>
+        <span id="moodName">Warm Gold</span>
+      </button>
+
       <button type="button" id="soundToggleBtn" onclick="toggleSound()"
-        class="text-[11px] px-2.5 py-1 rounded-full bg-slate-900/80 text-slate-300 border border-slate-700/70 hover:border-slate-500 transition">
-        Sound: Off
+        class="text-[11px] px-2.5 py-1 rounded-full bg-black/50 text-slate-300 border border-white/10 hover:border-white/25 transition">
+        Sound: On
       </button>
       <span id="userBadge" class="hidden text-[10px] px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-mono"></span>
       <button id="logoutBtn" onclick="handleLogout()" class="hidden text-xs text-slate-400 hover:text-red-400 underline">Logout</button>
     </div>
   </header>
 
-  <!-- ================= VIEW 1: LOGIN PAGE (LAMP + CARD) ================= -->
-  <section id="loginView" class="w-full max-w-4xl mx-auto my-auto z-10">
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+  <!-- ================= VIEW 1: LOGIN STAGE ================= -->
+  <section id="loginView" class="w-full max-w-5xl mx-auto my-auto z-10">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-8 items-center">
 
-      <!-- Interactive Lamp Column -->
-      <div class="md:col-span-5 flex flex-col items-center justify-center relative py-2">
-        <button type="button" onclick="cycleLampMood()" title="Click to shift lamp light"
-          class="group relative focus:outline-none cursor-pointer select-none">
-          <!-- Hint Pill -->
-          <span class="hidden sm:inline-block absolute -right-28 top-12 text-[11px] text-slate-300 bg-slate-900/90 border border-slate-700/80 px-2.5 py-1 rounded-lg shadow-md group-hover:translate-x-0.5 transition-transform">
-            ← Click lamp
-          </span>
+      <!-- Realistic Articulated Desk Lamp with Pull Chain -->
+      <div class="md:col-span-6 flex flex-col items-center justify-center relative select-none">
+        <svg id="lampSvg" class="w-full max-w-[330px] sm:max-w-[370px] h-auto overflow-visible" viewBox="0 0 380 390" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <!-- Metallic Shade Gradient -->
+            <linearGradient id="shadeMetal" x1="125" y1="55" x2="235" y2="155" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#3c4240" />
+              <stop offset="35%" stop-color="#232726" />
+              <stop offset="85%" stop-color="#141716" />
+              <stop offset="100%" stop-color="#0d0f0e" />
+            </linearGradient>
 
-          <svg width="210" height="240" viewBox="0 0 210 240" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Light beam cone -->
-            <polygon points="122,88 198,215 58,215" class="lamp-cone" />
-            <!-- Base -->
-            <ellipse cx="75" cy="216" rx="38" ry="7" fill="#1e293b" stroke="#334155" stroke-width="1.5" />
-            <rect x="67" y="206" width="16" height="10" rx="3" fill="#334155" />
-            <!-- Lower arm -->
-            <line x1="75" y1="206" x2="52" y2="125" stroke="#475569" stroke-width="6" stroke-linecap="round" />
-            <!-- Joint -->
-            <circle cx="52" cy="125" r="7" fill="#1e293b" stroke="#64748b" stroke-width="2" />
-            <!-- Upper arm -->
-            <line x1="52" y1="125" x2="112" y2="66" stroke="#475569" stroke-width="6" stroke-linecap="round" />
-            <!-- Shade -->
-            <path d="M96 58 L142 74 L122 94 L86 78 Z" fill="#1e293b" stroke="#64748b" stroke-width="2" />
-            <!-- Glowing bulb / inner diffuser -->
-            <ellipse cx="114" cy="86" rx="14" ry="4.5" transform="rotate(20 114 86)" class="lamp-shade-light" />
-          </svg>
-        </button>
-        <p class="text-[11px] text-slate-400 mt-1">
-          Mood: <span id="lampMoodLabel" class="text-slate-200 font-medium">Warm Amber</span>
-        </p>
+            <!-- Specular Rim Highlight on Shade -->
+            <linearGradient id="shadeRim" x1="130" y1="62" x2="220" y2="120" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.28)" />
+              <stop offset="50%" stop-color="rgba(255,255,255,0.04)" />
+              <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+            </linearGradient>
+
+            <!-- Inner Shade Reflector (tinted dynamically) -->
+            <radialGradient id="innerReflector" cx="50%" cy="45%" r="55%">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+              <stop offset="45%" id="innerStopMid" stop-color="#f5b041" stop-opacity="0.85" />
+              <stop offset="100%" id="innerStopEdge" stop-color="#78350f" stop-opacity="0.95" />
+            </radialGradient>
+
+            <!-- Metallic Arm Gradient -->
+            <linearGradient id="armMetal" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#181b1a" />
+              <stop offset="45%" stop-color="#3a403e" />
+              <stop offset="100%" stop-color="#141615" />
+            </linearGradient>
+
+            <!-- Brass Joint Gradient -->
+            <radialGradient id="brassJoint" cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stop-color="#f6d37a" />
+              <stop offset="55%" stop-color="#b8892d" />
+              <stop offset="100%" stop-color="#5c4110" />
+            </radialGradient>
+
+            <!-- Weighted Base Gradient -->
+            <linearGradient id="baseMetal" x1="55" y1="322" x2="175" y2="352" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#343937" />
+              <stop offset="50%" stop-color="#1e2221" />
+              <stop offset="100%" stop-color="#0f1110" />
+            </linearGradient>
+
+            <!-- Volumetric Spotlight Cone -->
+            <linearGradient id="beamGrad" x1="185" y1="130" x2="235" y2="355" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" id="beamStopTop" stop-color="#f5b041" stop-opacity="0.46" />
+              <stop offset="55%" id="beamStopMid" stop-color="#f5b041" stop-opacity="0.14" />
+              <stop offset="100%" id="beamStopBot" stop-color="#f5b041" stop-opacity="0" />
+            </linearGradient>
+
+            <!-- Desk Surface Light Pool -->
+            <radialGradient id="floorPoolGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" id="poolStopCenter" stop-color="#f5b041" stop-opacity="0.34" />
+              <stop offset="65%" id="poolStopMid" stop-color="#f5b041" stop-opacity="0.10" />
+              <stop offset="100%" stop-color="#f5b041" stop-opacity="0" />
+            </radialGradient>
+
+            <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="8" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          <!-- Desk Contact Shadow -->
+          <ellipse cx="118" cy="348" rx="68" ry="11" fill="rgba(0,0,0,0.75)" />
+
+          <!-- Floor Light Pool (visible when ON) -->
+          <ellipse cx="222" cy="346" rx="125" ry="22" fill="url(#floorPoolGrad)" class="floor-pool" />
+
+          <!-- Volumetric Light Beam Cone (visible when ON) -->
+          <polygon points="142,145 232,115 348,348 112,348" fill="url(#beamGrad)" class="lamp-beam" />
+
+          <!-- Lamp Base -->
+          <ellipse cx="115" cy="341" rx="54" ry="10" fill="#0d0f0e" />
+          <path d="M62 338 C62 325, 168 325, 168 338 L168 343 C168 351, 62 351, 62 343 Z" fill="url(#baseMetal)" stroke="#3b413f" stroke-width="1" />
+          <ellipse cx="115" cy="331" rx="34" ry="6" fill="#2b302e" stroke="#484f4d" stroke-width="0.8" />
+          <!-- Base Pivot Stem -->
+          <rect x="108" y="314" width="14" height="18" rx="4" fill="url(#armMetal)" />
+          <circle cx="115" cy="316" r="6" fill="url(#brassJoint)" />
+
+          <!-- Lower Articulated Arm -->
+          <g transform="rotate(-19 115 316)">
+            <rect x="109" y="210" width="5" height="106" rx="2.5" fill="url(#armMetal)" />
+            <rect x="117" y="210" width="4" height="106" rx="2" fill="#232726" />
+            <!-- Tension Spring Detail -->
+            <line x1="115" y1="232" x2="115" y2="296" stroke="#8a6c2e" stroke-width="1.5" stroke-dasharray="2.5 2.5" />
+          </g>
+
+          <!-- Elbow Joint -->
+          <circle cx="80" cy="216" r="10.5" fill="#181b1a" stroke="#434947" stroke-width="1.5" />
+          <circle cx="80" cy="216" r="6.5" fill="url(#brassJoint)" />
+          <circle cx="80" cy="216" r="2.2" fill="#2d2108" />
+
+          <!-- Upper Articulated Arm -->
+          <g transform="rotate(42 80 216)">
+            <rect x="75" y="106" width="5" height="110" rx="2.5" fill="url(#armMetal)" />
+            <rect x="82" y="106" width="4" height="110" rx="2" fill="#242827" />
+          </g>
+
+          <!-- Neck Socket & Swivel -->
+          <circle cx="153" cy="134" r="7.5" fill="url(#brassJoint)" />
+          <path d="M148 128 L166 106 L176 114 L158 136 Z" fill="#232726" stroke="#454c4a" stroke-width="1" />
+
+          <!-- Inner Shade Opening & Bulb -->
+          <ellipse cx="187" cy="130" rx="47" ry="16" transform="rotate(-18 187 130)" fill="#161817" />
+          <ellipse cx="187" cy="130" rx="44" ry="14" transform="rotate(-18 187 130)" fill="url(#innerReflector)" class="bulb-glow" />
+
+          <!-- Glowing Bulb Sphere -->
+          <circle id="lampBulb" cx="185" cy="126" r="13" fill="#2a2e2d" />
+          <circle id="lampBulbLit" cx="185" cy="126" r="13" fill="#fff7ed" filter="url(#softGlow)" class="bulb-glow" />
+
+          <!-- Outer Bell Lamp Shade -->
+          <path d="M158 98 C166 72, 198 66, 212 86 L233 115 C208 132, 165 146, 141 144 Z"
+            fill="url(#shadeMetal)" stroke="#3e4442" stroke-width="1.2" />
+          <!-- Top Cap -->
+          <path d="M167 84 C174 70, 194 67, 202 78 L196 86 C188 80, 177 82, 172 90 Z"
+            fill="#171a19" stroke="#4d5552" stroke-width="1" />
+          <!-- Specular Highlight Arc -->
+          <path d="M163 102 C170 84, 192 78, 204 91" stroke="url(#shadeRim)" stroke-width="3" stroke-linecap="round" />
+
+          <!-- Interactive Pull-Chain Cord & Bead -->
+          <g id="pullChainGroup">
+            <!-- Cord line -->
+            <line id="chainCord" x1="162" y1="142" x2="162" y2="212" stroke="#9ca3af" stroke-width="1.6" stroke-dasharray="2 1.5" />
+            <!-- Brass/Silver Bead -->
+            <circle id="chainBead" cx="162" cy="215" r="4.8" fill="url(#brassJoint)" stroke="#fef3c7" stroke-width="0.7" />
+            <!-- Invisible larger touch/drag hit area -->
+            <rect id="pullChainHit" x="142" y="140" width="40" height="95" fill="transparent" />
+          </g>
+
+          <!-- Prompt Pill beside the Pull Chain -->
+          <g id="pullHintGroup" transform="translate(176, 194)" class="hint-badge pointer-events-none">
+            <rect x="0" y="0" width="108" height="22" rx="11" fill="rgba(22, 25, 24, 0.92)" stroke="rgba(255,255,255,0.14)" stroke-width="1" />
+            <text x="54" y="14.5" text-anchor="middle" fill="#d1d5db" font-size="10" font-family="system-ui, sans-serif">
+              ← Pull / click chain
+            </text>
+          </g>
+        </svg>
       </div>
 
-      <!-- Auth Card Column -->
-      <div class="md:col-span-7 w-full max-w-md mx-auto animate-card-in">
-        <div class="glass-card rounded-2xl p-6 shadow-2xl space-y-5">
-          <div class="flex items-center justify-between text-[11px] text-slate-400 border-b border-slate-800/80 pb-3">
-            <span class="font-semibold tracking-widest uppercase text-slate-300">Your Space</span>
-            <span class="font-mono text-slate-500">GATEWAY AUTH</span>
-          </div>
-
+      <!-- Login Card (Revealed when Lamp is Turned On) -->
+      <div class="md:col-span-6 w-full max-w-[390px] mx-auto login-card-shell" id="loginCardShell">
+        <div class="glass-card rounded-2xl p-6 sm:p-7 space-y-5">
+          <!-- Top Mini Header -->
           <div class="text-center space-y-1">
-            <h2 class="text-xl font-bold text-slate-100">Welcome Back</h2>
-            <p class="text-xs text-slate-400">Sign in with your Supabase Auth account</p>
+            <span class="text-[10px] font-bold tracking-[0.22em] uppercase text-slate-400">Your Space</span>
+            <h2 class="text-2xl font-bold text-slate-100 tracking-tight">Welcome</h2>
+            <p class="text-xs text-slate-400">Sign in to continue to Document Gateway</p>
           </div>
 
           <form onsubmit="handleLogin(event)" class="space-y-4">
             <div>
-              <label class="block text-xs font-medium text-slate-300 mb-1">Email Address</label>
+              <label class="block text-[11px] font-medium text-slate-300 mb-1.5">Email Address</label>
               <input type="email" id="loginEmail" required placeholder="user@company.com"
-                class="w-full px-3 py-2.5 bg-slate-950/75 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors">
+                class="accent-input w-full px-3.5 py-2.5 bg-black/45 border border-white/10 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-all">
             </div>
 
             <div>
-              <label class="block text-xs font-medium text-slate-300 mb-1">Password</label>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-[11px] font-medium text-slate-300">Password</label>
+                <span class="text-[11px] accent-link opacity-80">Supabase Auth</span>
+              </div>
               <input type="password" id="loginPassword" required placeholder="••••••••"
-                class="w-full px-3 py-2.5 bg-slate-950/75 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors">
+                class="accent-input w-full px-3.5 py-2.5 bg-black/45 border border-white/10 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-all">
             </div>
 
-            <div id="loginError" class="hidden text-xs text-red-400 bg-red-950/40 border border-red-800/50 p-2.5 rounded-xl text-center"></div>
+            <div id="loginError" class="hidden text-xs text-red-400 bg-red-950/50 border border-red-800/60 p-2.5 rounded-xl text-center"></div>
 
             <button type="submit" id="loginBtn"
-              class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-950/50 transition-all">
-              Sign In →
+              class="accent-btn w-full py-3 px-4 active:scale-[0.99] font-semibold rounded-xl text-sm">
+              Sign In &rarr;
             </button>
           </form>
+
+          <div class="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Pull lamp chain to toggle light</span>
+            <button type="button" onclick="cycleLampColor()" class="accent-link hover:underline font-medium">
+              Shift color
+            </button>
+          </div>
         </div>
       </div>
 
@@ -162,7 +339,7 @@
 
   <!-- ================= VIEW 2: LANDING PAGE ================= -->
   <section id="landingView" class="w-full max-w-md mx-auto space-y-5 my-auto hidden z-10">
-    <div class="glass-card rounded-2xl p-6 shadow-2xl space-y-6 text-center animate-card-in">
+    <div class="glass-card rounded-2xl p-6 shadow-2xl space-y-6 text-center">
       <div class="space-y-1">
         <span class="text-xs font-semibold tracking-wider text-emerald-400 uppercase">Gateway Access</span>
         <h2 class="text-xl font-bold text-slate-100">Select Platform</h2>
@@ -198,7 +375,7 @@
   </section>
 
   <!-- Footer -->
-  <footer class="w-full max-w-4xl mx-auto text-center text-[10px] text-slate-500 z-10">
+  <footer class="w-full max-w-5xl mx-auto text-center text-[10px] text-slate-600 z-10">
     Secure Document Receiving Gateway &bull; Powered by Supabase Auth
   </footer>
 
@@ -208,53 +385,210 @@
     const SUPABASE_ANON_KEY = "sb_publishable_-b5NQcuBhQk57Y-tXzDe_A_HR3Im8CH";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Lamp Moods & Optional Web Audio Hum
-    const LAMP_MOODS = [
-      { name: "Warm Amber", shade: "#f59e0b", glow: "rgba(245, 158, 11, 0.24)" },
-      { name: "Emerald", shade: "#10b981", glow: "rgba(16, 185, 129, 0.24)" },
-      { name: "Cyan", shade: "#06b6d4", glow: "rgba(6, 182, 212, 0.24)" },
-      { name: "Rose", shade: "#f43f5e", glow: "rgba(244, 63, 94, 0.24)" }
+    // Lamp Color Palettes (matches video color sequence)
+    const LAMP_COLORS = [
+      { name: "Warm Gold", hex: "#f5b041", deep: "#78350f", soft: "rgba(245, 176, 65, 0.22)", wall: "rgba(245, 176, 65, 0.14)", text: "#111315" },
+      { name: "Electric Cyan", hex: "#38bdf8", deep: "#0c4a6e", soft: "rgba(56, 189, 248, 0.22)", wall: "rgba(56, 189, 248, 0.14)", text: "#091118" },
+      { name: "Crimson Rose", hex: "#f43f5e", deep: "#881337", soft: "rgba(244, 63, 94, 0.24)", wall: "rgba(244, 63, 94, 0.14)", text: "#ffffff" },
+      { name: "Emerald Glow", hex: "#22c55e", deep: "#14532d", soft: "rgba(34, 197, 94, 0.22)", wall: "rgba(34, 197, 94, 0.14)", text: "#08140d" },
+      { name: "Daylight White", hex: "#e2e8f0", deep: "#475569", soft: "rgba(226, 232, 240, 0.20)", wall: "rgba(226, 232, 240, 0.12)", text: "#0f172a" }
     ];
-    let moodIndex = 0;
-    let soundEnabled = false;
+
+    let isLampOn = false;
+    let colorIdx = 0;
+    let soundEnabled = true;
     let audioCtx = null;
 
-    function playLampHum() {
+    // Web Audio API Switch Click + 120Hz Electrical Hum (from video code)
+    function playLampSound(turningOn) {
       if (!soundEnabled) return;
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       if (!AudioContextClass) return;
       if (!audioCtx) audioCtx = new AudioContextClass();
+      if (audioCtx.state === "suspended") audioCtx.resume();
 
       const now = audioCtx.currentTime;
-      const hum = audioCtx.createOscillator();
-      const humGain = audioCtx.createGain();
-      hum.type = "sine";
-      hum.frequency.setValueAtTime(120, now + 0.05);
-      humGain.gain.setValueAtTime(0.001, now);
-      humGain.gain.linearRampToValueAtTime(0.04, now + 0.08);
-      humGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
 
-      hum.connect(humGain);
-      humGain.connect(audioCtx.destination);
-      hum.start(now + 0.05);
-      hum.stop(now + 0.35);
+      // Crisp mechanical pull-chain click
+      const clickOsc = audioCtx.createOscillator();
+      const clickGain = audioCtx.createGain();
+      clickOsc.type = "triangle";
+      clickOsc.frequency.setValueAtTime(turningOn ? 920 : 640, now);
+      clickOsc.frequency.exponentialRampToValueAtTime(180, now + 0.035);
+      clickGain.gain.setValueAtTime(0.12, now);
+      clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      clickOsc.connect(clickGain);
+      clickGain.connect(audioCtx.destination);
+      clickOsc.start(now);
+      clickOsc.stop(now + 0.04);
+
+      // Subtle 120Hz warm bulb hum when turning ON
+      if (turningOn) {
+        const hum = audioCtx.createOscillator();
+        const humGain = audioCtx.createGain();
+        hum.type = "sine";
+        hum.frequency.setValueAtTime(120, now + 0.05);
+        humGain.gain.setValueAtTime(0.001, now);
+        humGain.gain.linearRampToValueAtTime(0.035, now + 0.08);
+        humGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+        hum.connect(humGain);
+        humGain.connect(audioCtx.destination);
+        hum.start(now + 0.05);
+        hum.stop(now + 0.35);
+      }
     }
 
-    function cycleLampMood() {
-      moodIndex = (moodIndex + 1) % LAMP_MOODS.length;
-      const mood = LAMP_MOODS[moodIndex];
-      document.documentElement.style.setProperty("--lamp-shade", mood.shade);
-      document.documentElement.style.setProperty("--lamp-glow", mood.glow);
-      document.getElementById("lampMoodLabel").innerText = mood.name;
-      playLampHum();
+    function applyLampColor(idx) {
+      const c = LAMP_COLORS[idx];
+      const root = document.documentElement;
+      root.style.setProperty("--accent", c.hex);
+      root.style.setProperty("--accent-soft", c.soft);
+      root.style.setProperty("--accent-text", c.text);
+      if (isLampOn) {
+        root.style.setProperty("--wall-light", c.wall);
+      }
+
+      // Update SVG gradient stops
+      document.getElementById("innerStopMid").setAttribute("stop-color", c.hex);
+      document.getElementById("innerStopEdge").setAttribute("stop-color", c.deep);
+      document.getElementById("beamStopTop").setAttribute("stop-color", c.hex);
+      document.getElementById("beamStopMid").setAttribute("stop-color", c.hex);
+      document.getElementById("beamStopBot").setAttribute("stop-color", c.hex);
+      document.getElementById("poolStopCenter").setAttribute("stop-color", c.hex);
+      document.getElementById("poolStopMid").setAttribute("stop-color", c.hex);
+
+      document.getElementById("moodDot").style.background = c.hex;
+      document.getElementById("moodName").innerText = c.name;
+    }
+
+    function setLampState(on) {
+      isLampOn = on;
+      document.body.classList.toggle("lamp-on", isLampOn);
+
+      const statusDot = document.getElementById("statusDot");
+      const moodBtn = document.getElementById("moodCycleBtn");
+      const hintGroup = document.getElementById("pullHintGroup");
+
+      if (isLampOn) {
+        applyLampColor(colorIdx);
+        statusDot.classList.remove("bg-slate-600");
+        statusDot.classList.add("bg-emerald-500", "animate-pulse");
+        moodBtn.classList.remove("hidden");
+        hintGroup.style.opacity = "0";
+        setTimeout(() => {
+          const emailInput = document.getElementById("loginEmail");
+          if (emailInput && !document.getElementById("loginView").classList.contains("hidden")) {
+            emailInput.focus();
+          }
+        }, 350);
+      } else {
+        document.documentElement.style.setProperty("--wall-light", "rgba(255,255,255,0.02)");
+        statusDot.classList.remove("bg-emerald-500", "animate-pulse");
+        statusDot.classList.add("bg-slate-600");
+        moodBtn.classList.add("hidden");
+        hintGroup.style.opacity = "1";
+      }
+
+      playLampSound(isLampOn);
+    }
+
+    function cycleLampColor() {
+      if (!isLampOn) {
+        setLampState(true);
+        return;
+      }
+      colorIdx = (colorIdx + 1) % LAMP_COLORS.length;
+      applyLampColor(colorIdx);
     }
 
     function toggleSound() {
       soundEnabled = !soundEnabled;
       document.getElementById("soundToggleBtn").innerText = soundEnabled ? "Sound: On" : "Sound: Off";
-      if (soundEnabled) playLampHum();
     }
 
+    // Spring-animated Pull-Chain Drag & Click Physics
+    (function initPullChain() {
+      const hitArea = document.getElementById("pullChainHit");
+      const cord = document.getElementById("chainCord");
+      const bead = document.getElementById("chainBead");
+
+      const baseY = 212;
+      let currentY = baseY;
+      let velocity = 0;
+      let isDragging = false;
+      let startPointerY = 0;
+      let toggledDuringDrag = false;
+      let animFrame = null;
+
+      function renderChain(y) {
+        cord.setAttribute("y2", y);
+        bead.setAttribute("cy", y + 3);
+      }
+
+      function springBack() {
+        const stiffness = 0.24;
+        const damping = 0.72;
+        const force = (baseY - currentY) * stiffness;
+        velocity = (velocity + force) * damping;
+        currentY += velocity;
+        renderChain(currentY);
+
+        if (Math.abs(baseY - currentY) > 0.2 || Math.abs(velocity) > 0.2) {
+          animFrame = requestAnimationFrame(springBack);
+        } else {
+          currentY = baseY;
+          velocity = 0;
+          renderChain(baseY);
+        }
+      }
+
+      function triggerPullBounce() {
+        cancelAnimationFrame(animFrame);
+        currentY = baseY + 26;
+        velocity = 0;
+        renderChain(currentY);
+        setLampState(!isLampOn);
+        animFrame = requestAnimationFrame(springBack);
+      }
+
+      hitArea.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        cancelAnimationFrame(animFrame);
+        isDragging = true;
+        toggledDuringDrag = false;
+        startPointerY = e.clientY;
+        hitArea.setPointerCapture(e.pointerId);
+      });
+
+      hitArea.addEventListener("pointermove", (e) => {
+        if (!isDragging) return;
+        const delta = Math.max(0, Math.min(42, e.clientY - startPointerY));
+        currentY = baseY + delta;
+        renderChain(currentY);
+
+        if (delta >= 22 && !toggledDuringDrag) {
+          toggledDuringDrag = true;
+          setLampState(!isLampOn);
+        }
+      });
+
+      function endDrag(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        const moved = Math.abs(e.clientY - startPointerY);
+        if (!toggledDuringDrag && moved < 8) {
+          // Simple click/tap also pulls the chain smoothly
+          triggerPullBounce();
+        } else {
+          animFrame = requestAnimationFrame(springBack);
+        }
+      }
+
+      hitArea.addEventListener("pointerup", endDrag);
+      hitArea.addEventListener("pointercancel", endDrag);
+    })();
+
+    // View Navigation
     function navigateTo(viewName) {
       document.getElementById('loginView').classList.add('hidden');
       document.getElementById('landingView').classList.add('hidden');
@@ -267,6 +601,7 @@
       } else if (viewName === 'landing') {
         document.getElementById('landingView').classList.remove('hidden');
         document.getElementById('headerTitle').innerText = 'Document Gateway';
+        document.getElementById('moodCycleBtn').classList.add('hidden');
       }
     }
 
@@ -302,17 +637,19 @@
         errorDiv.classList.remove('hidden');
       } finally {
         loginBtn.disabled = false;
-        loginBtn.innerText = 'Sign In →';
+        loginBtn.innerHTML = 'Sign In &rarr;';
       }
     }
 
     async function handleLogout() {
       await supabaseClient.auth.signOut();
       navigateTo('login');
+      setLampState(true);
     }
 
     // Check active session on load
     window.addEventListener('DOMContentLoaded', async () => {
+      applyLampColor(0);
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (session && session.user) {
         const userEmail = session.user.email;
