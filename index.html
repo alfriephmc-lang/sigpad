@@ -9,68 +9,160 @@
   <!-- Supabase JS Client CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
+    :root {
+      --lamp-glow: rgba(245, 158, 11, 0.22);
+      --lamp-shade: #f59e0b;
+      --accent-btn: #d97706;
+      --accent-btn-hover: #f59e0b;
+    }
+
     body {
-      background-color: #0f172a;
+      background-color: #0b0f14;
       color: #f8fafc;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       touch-action: manipulation;
+      overflow-x: hidden;
     }
+
+    /* Ambient lighting backdrop that shifts with lamp state */
+    .ambient-bg {
+      background:
+        radial-gradient(circle at 22% 38%, var(--lamp-glow), transparent 48%),
+        radial-gradient(circle at 78% 55%, rgba(16, 185, 129, 0.08), transparent 52%),
+        #0b0f14;
+      transition: background 0.9s ease;
+    }
+
     .glass-card {
-      background: rgba(30, 41, 59, 0.7);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: rgba(20, 25, 33, 0.86);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    @keyframes cardSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.985);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .animate-card-in {
+      animation: cardSlideIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .lamp-shade-light {
+      fill: var(--lamp-shade);
+      filter: drop-shadow(0 0 14px var(--lamp-glow));
+      transition: fill 0.8s ease, filter 0.8s ease;
+    }
+
+    .lamp-cone {
+      fill: var(--lamp-glow);
+      transition: fill 0.8s ease;
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between p-3 sm:p-6">
+<body class="ambient-bg min-h-screen flex flex-col justify-between p-3 sm:p-6">
 
   <!-- Header -->
-  <header class="w-full max-w-md mx-auto mb-4 flex items-center justify-between">
+  <header class="w-full max-w-4xl mx-auto mb-4 flex items-center justify-between z-10">
     <div class="flex items-center space-x-2">
-      <div class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
-      <h1 class="text-base font-bold tracking-tight text-slate-100" id="headerTitle">Portal Authentication</h1>
+      <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
+      <h1 class="text-sm sm:text-base font-bold tracking-tight text-slate-100" id="headerTitle">Portal Authentication</h1>
     </div>
-    <div class="flex items-center space-x-2">
+    <div class="flex items-center space-x-3">
+      <button type="button" id="soundToggleBtn" onclick="toggleSound()"
+        class="text-[11px] px-2.5 py-1 rounded-full bg-slate-900/80 text-slate-300 border border-slate-700/70 hover:border-slate-500 transition">
+        Sound: Off
+      </button>
       <span id="userBadge" class="hidden text-[10px] px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-mono"></span>
       <button id="logoutBtn" onclick="handleLogout()" class="hidden text-xs text-slate-400 hover:text-red-400 underline">Logout</button>
     </div>
   </header>
 
-  <!-- ================= VIEW 1: LOGIN PAGE ================= -->
-  <section id="loginView" class="w-full max-w-md mx-auto space-y-4 my-auto">
-    <div class="glass-card rounded-2xl p-6 shadow-2xl space-y-5">
-      <div class="text-center space-y-1">
-        <h2 class="text-xl font-bold text-slate-100">Welcome Back</h2>
-        <p class="text-xs text-slate-400">Sign in with your Supabase Auth account</p>
+  <!-- ================= VIEW 1: LOGIN PAGE (LAMP + CARD) ================= -->
+  <section id="loginView" class="w-full max-w-4xl mx-auto my-auto z-10">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+
+      <!-- Interactive Lamp Column -->
+      <div class="md:col-span-5 flex flex-col items-center justify-center relative py-2">
+        <button type="button" onclick="cycleLampMood()" title="Click to shift lamp light"
+          class="group relative focus:outline-none cursor-pointer select-none">
+          <!-- Hint Pill -->
+          <span class="hidden sm:inline-block absolute -right-28 top-12 text-[11px] text-slate-300 bg-slate-900/90 border border-slate-700/80 px-2.5 py-1 rounded-lg shadow-md group-hover:translate-x-0.5 transition-transform">
+            ← Click lamp
+          </span>
+
+          <svg width="210" height="240" viewBox="0 0 210 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Light beam cone -->
+            <polygon points="122,88 198,215 58,215" class="lamp-cone" />
+            <!-- Base -->
+            <ellipse cx="75" cy="216" rx="38" ry="7" fill="#1e293b" stroke="#334155" stroke-width="1.5" />
+            <rect x="67" y="206" width="16" height="10" rx="3" fill="#334155" />
+            <!-- Lower arm -->
+            <line x1="75" y1="206" x2="52" y2="125" stroke="#475569" stroke-width="6" stroke-linecap="round" />
+            <!-- Joint -->
+            <circle cx="52" cy="125" r="7" fill="#1e293b" stroke="#64748b" stroke-width="2" />
+            <!-- Upper arm -->
+            <line x1="52" y1="125" x2="112" y2="66" stroke="#475569" stroke-width="6" stroke-linecap="round" />
+            <!-- Shade -->
+            <path d="M96 58 L142 74 L122 94 L86 78 Z" fill="#1e293b" stroke="#64748b" stroke-width="2" />
+            <!-- Glowing bulb / inner diffuser -->
+            <ellipse cx="114" cy="86" rx="14" ry="4.5" transform="rotate(20 114 86)" class="lamp-shade-light" />
+          </svg>
+        </button>
+        <p class="text-[11px] text-slate-400 mt-1">
+          Mood: <span id="lampMoodLabel" class="text-slate-200 font-medium">Warm Amber</span>
+        </p>
       </div>
 
-      <form onsubmit="handleLogin(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Email Address</label>
-          <input type="email" id="loginEmail" required placeholder="user@company.com" 
-            class="w-full px-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors">
+      <!-- Auth Card Column -->
+      <div class="md:col-span-7 w-full max-w-md mx-auto animate-card-in">
+        <div class="glass-card rounded-2xl p-6 shadow-2xl space-y-5">
+          <div class="flex items-center justify-between text-[11px] text-slate-400 border-b border-slate-800/80 pb-3">
+            <span class="font-semibold tracking-widest uppercase text-slate-300">Your Space</span>
+            <span class="font-mono text-slate-500">GATEWAY AUTH</span>
+          </div>
+
+          <div class="text-center space-y-1">
+            <h2 class="text-xl font-bold text-slate-100">Welcome Back</h2>
+            <p class="text-xs text-slate-400">Sign in with your Supabase Auth account</p>
+          </div>
+
+          <form onsubmit="handleLogin(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Email Address</label>
+              <input type="email" id="loginEmail" required placeholder="user@company.com"
+                class="w-full px-3 py-2.5 bg-slate-950/75 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors">
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Password</label>
+              <input type="password" id="loginPassword" required placeholder="••••••••"
+                class="w-full px-3 py-2.5 bg-slate-950/75 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors">
+            </div>
+
+            <div id="loginError" class="hidden text-xs text-red-400 bg-red-950/40 border border-red-800/50 p-2.5 rounded-xl text-center"></div>
+
+            <button type="submit" id="loginBtn"
+              class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-950/50 transition-all">
+              Sign In →
+            </button>
+          </form>
         </div>
+      </div>
 
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Password</label>
-          <input type="password" id="loginPassword" required placeholder="••••••••" 
-            class="w-full px-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors">
-        </div>
-
-        <div id="loginError" class="hidden text-xs text-red-400 bg-red-950/40 border border-red-800/50 p-2.5 rounded-xl text-center"></div>
-
-        <button type="submit" id="loginBtn"
-          class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-900/30 transition-all">
-          Sign In
-        </button>
-      </form>
     </div>
   </section>
 
   <!-- ================= VIEW 2: LANDING PAGE ================= -->
-  <section id="landingView" class="w-full max-w-md mx-auto space-y-5 my-auto hidden">
-    <div class="glass-card rounded-2xl p-6 shadow-2xl space-y-6 text-center">
+  <section id="landingView" class="w-full max-w-md mx-auto space-y-5 my-auto hidden z-10">
+    <div class="glass-card rounded-2xl p-6 shadow-2xl space-y-6 text-center animate-card-in">
       <div class="space-y-1">
         <span class="text-xs font-semibold tracking-wider text-emerald-400 uppercase">Gateway Access</span>
         <h2 class="text-xl font-bold text-slate-100">Select Platform</h2>
@@ -79,8 +171,8 @@
 
       <div class="space-y-3 pt-2">
         <!-- Receiving Platform Button (Links to signpad.html) -->
-        <a href="signpad.html" 
-          class="w-full py-4 px-5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-bold rounded-2xl text-sm shadow-lg shadow-emerald-900/40 transition-all flex items-center justify-between group block">
+        <a href="signpad.html"
+          class="w-full py-4 px-5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-bold rounded-2xl text-sm shadow-lg shadow-emerald-900/40 transition-all flex items-center justify-between group">
           <div class="flex items-center space-x-3">
             <div class="p-2 bg-emerald-700/50 rounded-xl">
               <svg class="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -91,7 +183,7 @@
         </a>
 
         <!-- Dashboard Button -->
-        <button disabled 
+        <button disabled
           class="w-full py-4 px-5 bg-slate-800/60 text-slate-500 border border-slate-700/60 font-bold rounded-2xl text-sm cursor-not-allowed flex items-center justify-between opacity-80">
           <div class="flex items-center space-x-3">
             <div class="p-2 bg-slate-800 rounded-xl">
@@ -106,7 +198,7 @@
   </section>
 
   <!-- Footer -->
-  <footer class="w-full max-w-md mx-auto text-center text-[10px] text-slate-600">
+  <footer class="w-full max-w-4xl mx-auto text-center text-[10px] text-slate-500 z-10">
     Secure Document Receiving Gateway &bull; Powered by Supabase Auth
   </footer>
 
@@ -115,6 +207,53 @@
     const SUPABASE_URL = "https://dideaglufjrautyomrzm.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_-b5NQcuBhQk57Y-tXzDe_A_HR3Im8CH";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Lamp Moods & Optional Web Audio Hum
+    const LAMP_MOODS = [
+      { name: "Warm Amber", shade: "#f59e0b", glow: "rgba(245, 158, 11, 0.24)" },
+      { name: "Emerald", shade: "#10b981", glow: "rgba(16, 185, 129, 0.24)" },
+      { name: "Cyan", shade: "#06b6d4", glow: "rgba(6, 182, 212, 0.24)" },
+      { name: "Rose", shade: "#f43f5e", glow: "rgba(244, 63, 94, 0.24)" }
+    ];
+    let moodIndex = 0;
+    let soundEnabled = false;
+    let audioCtx = null;
+
+    function playLampHum() {
+      if (!soundEnabled) return;
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      if (!audioCtx) audioCtx = new AudioContextClass();
+
+      const now = audioCtx.currentTime;
+      const hum = audioCtx.createOscillator();
+      const humGain = audioCtx.createGain();
+      hum.type = "sine";
+      hum.frequency.setValueAtTime(120, now + 0.05);
+      humGain.gain.setValueAtTime(0.001, now);
+      humGain.gain.linearRampToValueAtTime(0.04, now + 0.08);
+      humGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+
+      hum.connect(humGain);
+      humGain.connect(audioCtx.destination);
+      hum.start(now + 0.05);
+      hum.stop(now + 0.35);
+    }
+
+    function cycleLampMood() {
+      moodIndex = (moodIndex + 1) % LAMP_MOODS.length;
+      const mood = LAMP_MOODS[moodIndex];
+      document.documentElement.style.setProperty("--lamp-shade", mood.shade);
+      document.documentElement.style.setProperty("--lamp-glow", mood.glow);
+      document.getElementById("lampMoodLabel").innerText = mood.name;
+      playLampHum();
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById("soundToggleBtn").innerText = soundEnabled ? "Sound: On" : "Sound: Off";
+      if (soundEnabled) playLampHum();
+    }
 
     function navigateTo(viewName) {
       document.getElementById('loginView').classList.add('hidden');
@@ -163,7 +302,7 @@
         errorDiv.classList.remove('hidden');
       } finally {
         loginBtn.disabled = false;
-        loginBtn.innerText = 'Sign In';
+        loginBtn.innerText = 'Sign In →';
       }
     }
 
@@ -187,11 +326,5 @@
       }
     });
   </script>
-
-  <ElicitationsGroup message="Next steps for your authenticated system:">
-    <Elicitation label="Pass the logged-in user's email into signpad.html automatically" query="How can I pass the authenticated user email from this landing page to signpad.html using URL parameters or localStorage so it pre-fills the received by field?" />
-    <Elicitation label="Add RLS policy check on document_proofs using auth.uid()" query="Provide the SQL snippet to tie document_proofs entries to the authenticated Supabase Auth user ID." />
-  </ElicitationsGroup>
-
 </body>
 </html>
