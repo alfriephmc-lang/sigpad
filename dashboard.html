@@ -22,6 +22,104 @@
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
+
+    /* Frame-timed 7s Caveman Shock Sequence */
+    @keyframes vidLeftArmSwing {
+      0%, 14% { transform: rotate(34deg); }
+      42%, 52% { transform: rotate(-18deg); }
+      56% { transform: rotate(-36deg); }
+      84%, 100% { transform: rotate(34deg); }
+    }
+
+    @keyframes vidLeftWirePath {
+      0%, 14% { d: path("M 14 36 Q 66 28 104 72"); }
+      42%, 52% { d: path("M 14 36 Q 82 68 144 96"); }
+      56% { d: path("M 14 36 Q 68 48 112 64"); }
+      84%, 100% { d: path("M 14 36 Q 66 28 104 72"); }
+    }
+
+    @keyframes vidRightWirePath {
+      0%, 54% { d: path("M 346 36 Q 276 52 214 106"); }
+      58% { d: path("M 346 36 Q 290 66 244 86"); }
+      84%, 100% { d: path("M 346 36 Q 276 52 214 106"); }
+    }
+
+    @keyframes vidCavemanMotion {
+      0%, 53% { transform: translate(0px, 0px) rotate(0deg); }
+      56% { transform: translate(-5px, -2px) rotate(-2.5deg); }
+      60% { transform: translate(5px, 2px) rotate(2.5deg); }
+      64% { transform: translate(-5px, -1px) rotate(-2deg); }
+      68% { transform: translate(4px, 1px) rotate(1.5deg); }
+      74% { transform: translate(0px, -24px) rotate(0deg); }
+      80% { transform: translate(0px, -26px) rotate(0deg); }
+      88% { transform: translate(0px, 2px) rotate(0deg); }
+      92%, 100% { transform: translate(0px, 0px) rotate(0deg); }
+    }
+
+    @keyframes vidSparkBurst {
+      0%, 54% { opacity: 0; transform: scale(0.7); }
+      57% { opacity: 1; transform: scale(1.08); }
+      62% { opacity: 0.65; transform: scale(0.95); }
+      66% { opacity: 1; transform: scale(1.2); }
+      74% { opacity: 0.85; transform: scale(1.28); }
+      80%, 100% { opacity: 0; transform: scale(0.75); }
+    }
+
+    @keyframes vidArmsReaching {
+      0%, 70% { opacity: 1; }
+      73%, 84% { opacity: 0; }
+      88%, 100% { opacity: 1; }
+    }
+
+    @keyframes vidArmsFlung {
+      0%, 70% { opacity: 0; }
+      73%, 84% { opacity: 1; }
+      88%, 100% { opacity: 0; }
+    }
+
+    .vid-left-arm {
+      transform-box: fill-box;
+      transform-origin: 92% 20%;
+      animation: vidLeftArmSwing 7s ease-in-out infinite;
+    }
+
+    .vid-left-wire {
+      animation: vidLeftWirePath 7s ease-in-out infinite;
+    }
+
+    .vid-right-wire {
+      animation: vidRightWirePath 7s ease-in-out infinite;
+    }
+
+    .vid-caveman-body {
+      transform-box: fill-box;
+      transform-origin: 50% 85%;
+      animation: vidCavemanMotion 7s ease-in-out infinite;
+    }
+
+    .vid-spark-burst {
+      transform-box: fill-box;
+      transform-origin: 50% 50%;
+      animation: vidSparkBurst 7s ease-out infinite;
+    }
+
+    .vid-arms-reaching {
+      animation: vidArmsReaching 7s ease-in-out infinite;
+    }
+
+    .vid-arms-flung {
+      animation: vidArmsFlung 7s ease-in-out infinite;
+    }
+
+    .replay-sequence .vid-left-arm,
+    .replay-sequence .vid-left-wire,
+    .replay-sequence .vid-right-wire,
+    .replay-sequence .vid-caveman-body,
+    .replay-sequence .vid-spark-burst,
+    .replay-sequence .vid-arms-reaching,
+    .replay-sequence .vid-arms-flung {
+      animation: none !important;
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between p-4 sm:p-8">
@@ -29,13 +127,14 @@
   <!-- Header -->
   <header class="max-w-7xl mx-auto w-full mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
     <div class="flex items-center space-x-3">
-      <div class="w-3.5 h-3.5 bg-emerald-500 rounded-full animate-pulse"></div>
+      <div id="headerDot" class="w-3.5 h-3.5 bg-slate-600 rounded-full"></div>
       <div>
         <h1 class="text-xl font-bold tracking-tight text-slate-100">Document Tracking & Audit Dashboard</h1>
         <p class="text-xs text-slate-400">Department routing, history trails, and cycle archiving</p>
       </div>
     </div>
-    <div class="flex items-center space-x-3">
+    <div id="headerActions" class="hidden flex flex-wrap items-center gap-2.5">
+      <span id="authUserBadge" class="text-[10px] px-2.5 py-1.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-mono"></span>
       <a href="signpad.html" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition-all border border-slate-700 flex items-center space-x-2">
         <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
         <span>Open Receiving Pad</span>
@@ -44,11 +143,93 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
         <span>Refresh Logs</span>
       </button>
+      <button onclick="handleManualLogout()" class="px-3 py-2 bg-slate-900 hover:bg-red-950/60 text-slate-400 hover:text-red-400 text-xs font-semibold rounded-xl transition-all border border-slate-800">
+        Logout
+      </button>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="max-w-7xl mx-auto w-full space-y-6 mb-12">
+  <!-- ================= UNAUTHORIZED CAVEMAN SHOCK GUARD ================= -->
+  <section id="authGuardView" class="w-full max-w-md mx-auto my-auto hidden">
+    <div class="bg-white text-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-300">
+      <div class="p-6 text-center space-y-2.5">
+        <h2 class="text-4xl font-black tracking-tight text-slate-900">401</h2>
+
+        <!-- Caveman Cable Grab & Shock Scene -->
+        <div id="cavemanSceneWrapper" class="w-full max-w-[340px] mx-auto py-1">
+          <svg viewBox="0 0 360 185" class="w-full h-auto overflow-visible" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="180" cy="162" rx="140" ry="7" fill="#e2e8f0" />
+            <path d="M24 162 Q29 150 34 162 Q39 152 44 162" fill="#86efac" />
+            <path d="M316 162 Q321 151 326 162 Q331 153 336 162" fill="#86efac" />
+
+            <path d="M52 162 L58 96 L84 96 L90 162 Z" fill="#cbd5e1" />
+            <rect x="55" y="92" width="32" height="7" rx="3" fill="#94a3b8" />
+
+            <path d="M246 162 C244 128, 266 104, 294 106 C318 108, 328 134, 324 162 Z" fill="#cbd5e1" />
+
+            <path class="vid-right-wire" d="M346 36 Q 276 52 214 106" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round" />
+            <path class="vid-left-wire" d="M14 36 Q 66 28 104 72" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round" />
+
+            <g class="vid-caveman-body">
+              <g class="vid-spark-burst">
+                <polygon points="180,10 191,40 222,30 203,57 234,70 203,83 218,112 188,93 174,124 166,91 135,103 156,76 128,62 159,51 149,22 174,39"
+                  fill="#facc15" stroke="#f97316" stroke-width="2.5" stroke-linejoin="round" />
+                <path d="M122 104 L143 96 L136 114" stroke="#fde047" stroke-width="3" stroke-linecap="round" fill="none" />
+                <path d="M238 72 L216 79 L225 94" stroke="#fde047" stroke-width="3" stroke-linecap="round" fill="none" />
+              </g>
+
+              <path d="M166 128 L160 158" stroke="#eab08a" stroke-width="9" stroke-linecap="round" />
+              <path d="M194 128 L200 158" stroke="#eab08a" stroke-width="9" stroke-linecap="round" />
+              <ellipse cx="157" cy="160" rx="8" ry="4" fill="#1e293b" />
+              <ellipse cx="203" cy="160" rx="8" ry="4" fill="#1e293b" />
+
+              <path d="M158 84 L202 84 L210 132 L150 132 Z" fill="#f59e0b" stroke="#b45309" stroke-width="1.5" />
+              <path d="M150 132 L160 125 L170 132 L180 125 L190 132 L200 125 L210 132" fill="#f59e0b" />
+
+              <g class="vid-arms-reaching">
+                <path d="M202 94 L214 106" stroke="#eab08a" stroke-width="8" stroke-linecap="round" />
+                <g class="vid-left-arm">
+                  <path d="M158 94 L126 84" stroke="#eab08a" stroke-width="8" stroke-linecap="round" />
+                  <circle cx="124" cy="83" r="4.5" fill="#f3be9b" />
+                </g>
+              </g>
+
+              <g class="vid-arms-flung" opacity="0">
+                <path d="M158 92 L122 70" stroke="#eab08a" stroke-width="8" stroke-linecap="round" />
+                <path d="M202 92 L238 70" stroke="#eab08a" stroke-width="8" stroke-linecap="round" />
+              </g>
+
+              <circle cx="180" cy="60" r="18" fill="#f3be9b" />
+              <path d="M160 54 L154 36 L168 44 L175 28 L184 44 L196 32 L198 48 L208 43 L199 58 Z" fill="#451a03" />
+              <path d="M164 64 C164 80, 196 80, 196 64 C192 73, 168 73, 164 64 Z" fill="#451a03" />
+              <circle cx="174" cy="58" r="2.8" fill="#0f172a" />
+              <circle cx="186" cy="58" r="2.8" fill="#0f172a" />
+              <ellipse cx="180" cy="67" rx="4" ry="4.5" fill="#7f1d1d" />
+            </g>
+          </svg>
+        </div>
+
+        <h3 class="text-xl font-bold text-slate-900">Look like you're lost</h3>
+        <p id="guardReasonText" class="text-xs text-slate-600 max-w-xs mx-auto">
+          Authentication is required before accessing the Document Tracking & Audit Dashboard.
+        </p>
+
+        <div class="pt-2 flex items-center justify-center space-x-2">
+          <button type="button" onclick="replayCavemanShock()"
+            class="px-3.5 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-300 transition">
+            Replay Shock
+          </button>
+          <a href="index.html"
+            class="inline-block px-5 py-2.5 rounded-lg bg-[#39ac31] hover:bg-[#2f9228] active:scale-[0.98] text-white text-sm font-semibold shadow transition">
+            Go Back to Login Page
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PROTECTED MAIN CONTAINER ================= -->
+  <main id="protectedMain" class="max-w-7xl mx-auto w-full space-y-6 mb-12 hidden">
 
     <!-- Metrics Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -79,7 +260,7 @@
       <div class="glass-card rounded-2xl p-5 shadow-xl border border-slate-700/60 flex flex-col justify-between space-y-4">
         <div>
           <h3 class="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-2">Quick Filter Audit Logs</h3>
-          <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Filter by Doc No, Title, Dept..." 
+          <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Filter by Doc No, Title, Dept..."
             class="w-full px-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500">
         </div>
         <!-- Tab Switcher -->
@@ -136,15 +317,157 @@
     const SUPABASE_ANON_KEY = "sb_publishable_-b5NQcuBhQk57Y-tXzDe_A_HR3Im8CH";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // 20-Minute Inactivity Timeout (20 * 60 * 1000 ms)
+    const IDLE_TIMEOUT_MS = 20 * 60 * 1000;
+    const LAST_ACTIVITY_KEY = "gateway_last_activity_at";
+
     let rawDocumentLogs = [];
     let groupedDocumentMap = {};
     let currentTab = 'active'; // 'active' or 'archived'
+    let isAuthorized = false;
+    let idleCheckInterval = null;
 
-    window.addEventListener('DOMContentLoaded', () => {
-      fetchDocumentLogs();
+    function recordUserActivity() {
+      if (!isAuthorized) return;
+      localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+    }
+
+    function hasExceededIdleTimeout() {
+      const lastRaw = localStorage.getItem(LAST_ACTIVITY_KEY);
+      if (!lastRaw) return false;
+      const lastTs = Number(lastRaw);
+      if (!Number.isFinite(lastTs)) return false;
+      return (Date.now() - lastTs) >= IDLE_TIMEOUT_MS;
+    }
+
+    function stopIdleWatcher() {
+      if (idleCheckInterval) {
+        clearInterval(idleCheckInterval);
+        idleCheckInterval = null;
+      }
+    }
+
+    async function performAutoLogoutDueToInactivity() {
+      stopIdleWatcher();
+      localStorage.removeItem(LAST_ACTIVITY_KEY);
+      try {
+        await supabaseClient.auth.signOut();
+      } catch (e) {
+        console.warn("Auto-logout signOut warning:", e);
+      }
+      showAuthGuard("You were automatically logged out after 20 minutes of inactivity.");
+    }
+
+    function startIdleWatcher() {
+      stopIdleWatcher();
+      if (!localStorage.getItem(LAST_ACTIVITY_KEY)) {
+        localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+      }
+      idleCheckInterval = setInterval(async () => {
+        if (!isAuthorized) return;
+        if (hasExceededIdleTimeout()) {
+          await performAutoLogoutDueToInactivity();
+        }
+      }, 15000);
+    }
+
+    ["pointerdown", "keydown", "mousemove", "touchstart", "scroll"].forEach((evtName) => {
+      window.addEventListener(evtName, recordUserActivity, { passive: true });
+    });
+
+    document.addEventListener("visibilitychange", async () => {
+      if (document.visibilityState === "visible" && isAuthorized) {
+        if (hasExceededIdleTimeout()) {
+          await performAutoLogoutDueToInactivity();
+        }
+      }
+    });
+
+    function replayCavemanShock() {
+      const wrapper = document.getElementById("cavemanSceneWrapper");
+      if (!wrapper) return;
+      wrapper.classList.add("replay-sequence");
+      void wrapper.offsetWidth;
+      wrapper.classList.remove("replay-sequence");
+    }
+
+    function showAuthGuard(reasonMessage = "Authentication is required before accessing the Document Tracking & Audit Dashboard.") {
+      isAuthorized = false;
+      stopIdleWatcher();
+      document.getElementById("guardReasonText").innerText = reasonMessage;
+      document.getElementById("protectedMain").classList.add("hidden");
+      document.getElementById("headerActions").classList.add("hidden");
+      document.getElementById("authGuardView").classList.remove("hidden");
+      document.getElementById("headerDot").className = "w-3.5 h-3.5 bg-amber-500 rounded-full animate-pulse";
+      replayCavemanShock();
+    }
+
+    function showProtectedDashboard(email) {
+      isAuthorized = true;
+      document.getElementById("authGuardView").classList.add("hidden");
+      document.getElementById("protectedMain").classList.remove("hidden");
+      document.getElementById("headerActions").classList.remove("hidden");
+      document.getElementById("authUserBadge").innerText = email;
+      document.getElementById("headerDot").className = "w-3.5 h-3.5 bg-emerald-500 rounded-full animate-pulse";
+      recordUserActivity();
+      startIdleWatcher();
+    }
+
+    async function enforceSession() {
+      try {
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        if (error || !session || !session.user || !session.user.email) {
+          showAuthGuard();
+          return null;
+        }
+        if (hasExceededIdleTimeout()) {
+          await performAutoLogoutDueToInactivity();
+          return null;
+        }
+        showProtectedDashboard(session.user.email);
+        return session.user;
+      } catch (err) {
+        console.warn("Session check error:", err);
+        showAuthGuard();
+        return null;
+      }
+    }
+
+    async function handleManualLogout() {
+      stopIdleWatcher();
+      localStorage.removeItem(LAST_ACTIVITY_KEY);
+      await supabaseClient.auth.signOut();
+      showAuthGuard("You have signed out. Please log in again to view the dashboard.");
+    }
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      const user = await enforceSession();
+      if (user) {
+        await fetchDocumentLogs();
+      }
+    });
+
+    supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+      if (session && session.user && session.user.email) {
+        if (hasExceededIdleTimeout()) {
+          await performAutoLogoutDueToInactivity();
+          return;
+        }
+        const wasAuthorized = isAuthorized;
+        showProtectedDashboard(session.user.email);
+        if (!wasAuthorized) {
+          await fetchDocumentLogs();
+        }
+      } else {
+        showAuthGuard();
+      }
     });
 
     async function fetchDocumentLogs() {
+      const user = await enforceSession();
+      if (!user || !isAuthorized) return;
+      recordUserActivity();
+
       try {
         const { data, error } = await supabaseClient
           .from('document_proofs')
@@ -185,15 +508,15 @@
       return groups;
     }
 
-    // Get archived document list from localStorage
     function getArchivedDocs() {
       return JSON.parse(localStorage.getItem('archived_docs_list') || '[]');
     }
 
     function toggleArchiveDoc(docNo, event) {
-      event.stopPropagation(); // prevent row collapse toggle
+      event.stopPropagation();
+      recordUserActivity();
       let archived = getArchivedDocs();
-      
+
       if (archived.includes(docNo)) {
         archived = archived.filter(id => id !== docNo);
       } else {
@@ -206,6 +529,7 @@
     }
 
     function switchTab(tab) {
+      recordUserActivity();
       currentTab = tab;
       const tabActive = document.getElementById('tabActive');
       const tabArchived = document.getElementById('tabArchived');
@@ -226,7 +550,7 @@
     function updateMetrics(rawLogs, groupedMap) {
       const archivedList = getArchivedDocs();
       const docNumbers = Object.keys(groupedMap);
-      
+
       const archivedCount = docNumbers.filter(docNo => archivedList.includes(docNo)).length;
       const activeCount = docNumbers.length - archivedCount;
       const uniqueDepts = new Set(rawLogs.map(l => l.receiving_dept)).size;
@@ -241,8 +565,7 @@
     function renderCollapsibleTable(groupedMap) {
       const tbody = document.getElementById('logsTableBody');
       const archivedList = getArchivedDocs();
-      
-      // Filter based on active tab
+
       const docNumbers = Object.keys(groupedMap).filter(docNo => {
         const isArchived = archivedList.includes(docNo);
         return currentTab === 'archived' ? isArchived : !isArchived;
@@ -287,14 +610,13 @@
             </td>
             <td class="p-3.5 font-mono text-[11px] text-slate-400">${latestDate}</td>
             <td class="p-3.5 text-right">
-              <button onclick="toggleArchiveDoc('${docNo}', event)" 
+              <button onclick="toggleArchiveDoc('${docNo}', event)"
                 class="px-3 py-1 text-[11px] font-semibold rounded-lg border transition-all ${isArchived ? 'bg-slate-800 hover:bg-slate-700 text-emerald-400 border-emerald-700/60' : 'bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 border-amber-700/60'}">
                 ${isArchived ? 'Restore to Active' : 'Archive Cycle'}
               </button>
             </td>
           </tr>
 
-          <!-- Hidden Nested History Trail Row -->
           <tr id="${subTableId}" class="hidden bg-slate-950/80">
             <td colspan="8" class="p-4 border-l-4 border-emerald-500">
               <div class="space-y-2">
@@ -346,6 +668,7 @@
     }
 
     function toggleHistory(subTableId, rowId) {
+      recordUserActivity();
       const subRow = document.getElementById(subTableId);
       const chevron = document.getElementById(`chevron_${subTableId}`);
 
@@ -359,6 +682,7 @@
     }
 
     function filterTable() {
+      recordUserActivity();
       const query = document.getElementById('tableSearch').value.toLowerCase().trim();
       if (!query) {
         renderCollapsibleTable(groupedDocumentMap);
@@ -368,7 +692,7 @@
       const filteredGroupMap = {};
       Object.keys(groupedDocumentMap).forEach(docNo => {
         const logs = groupedDocumentMap[docNo];
-        const matches = logs.some(item => 
+        const matches = logs.some(item =>
           (item.doc_no && item.doc_no.toLowerCase().includes(query)) ||
           (item.doc_title && item.doc_title.toLowerCase().includes(query)) ||
           (item.received_by && item.received_by.toLowerCase().includes(query)) ||
